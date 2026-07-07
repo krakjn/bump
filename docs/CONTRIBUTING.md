@@ -16,7 +16,7 @@ and [Configuration Reference](CONFIGURATION.md).
 Default release build:
 
 ```bash
-git clone https://github.com/launchfirestorm/bump.git
+git clone https://github.com/krakjn/bump.git
 cd bump
 cargo build --release
 # binary: target/release/bump

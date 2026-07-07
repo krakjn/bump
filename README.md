@@ -24,13 +24,13 @@ I got tired of bespoke scripts and tons of regex parsing that differentiated sli
 **Linux, macOS, or WSL:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/launchfirestorm/bump/main/install/get_bump.sh | sh
+curl -fsSL https://raw.githubusercontent.com/krakjn/bump/main/install/get_bump.sh | sh
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-irm https://raw.githubusercontent.com/launchfirestorm/bump/main/install/get_bump.ps1 | iex
+irm https://raw.githubusercontent.com/krakjn/bump/main/install/get_bump.ps1 | iex
 ```
 
 
@@ -158,13 +158,13 @@ bump update pyproject.toml [BUMPFILE]
 The composite action `action.yml` at the repo root installs bump for the job's OS/arch:
 
 ```yaml
-- uses: launchfirestorm/bump@v7
+- uses: krakjn/bump@v7
 ```
 
 If your token differs from the default `GITHUB_TOKEN`:
 
 ```yaml
-- uses: launchfirestorm/bump@v7
+- uses: krakjn/bump@v7
   with:
     token: ${{ secrets.YOUR_TOKEN_HERE }}
 ```

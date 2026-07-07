@@ -4,7 +4,7 @@
  *  ) _ < )(__)(  )    (  )___/
  * (____/(______)(_/\/\_)(__)  
  *
- * https://github.com/launchfirestorm/bump
+ * https://github.com/krakjn/bump
  */
 
 #ifndef BUMP_VERSION_H

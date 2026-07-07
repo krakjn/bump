@@ -13,7 +13,7 @@ as the positional `BUMPFILE` argument on any command.
 #  ) _ < )(__)(  )    (  )___/
 # (____/(______)(_/\/\_)(__)
 #
-# https://github.com/launchfirestorm/bump
+# https://github.com/krakjn/bump
 
 prefix = "v"
 

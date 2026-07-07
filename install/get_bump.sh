@@ -2,13 +2,13 @@
 # Bump installer — Linux / macOS / WSL
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/launchfirestorm/bump/main/install/get_bump.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/krakjn/bump/main/install/get_bump.sh | sh
 #
 # No GitHub token is required. GITHUB_TOKEN / GH_TOKEN are optional (CI rate limits).
 #
 set -eu
 
-REPO="launchfirestorm/bump"
+REPO="krakjn/bump"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'

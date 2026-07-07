@@ -3,7 +3,7 @@ param([string]$InstallDir = '')
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$repo = 'launchfirestorm/bump'
+$repo = 'krakjn/bump'
 
 # Add token if available to avoid rate limits
 $headers = @{ 'User-Agent' = 'bump-installer'; 'Accept' = 'application/vnd.github+json' }

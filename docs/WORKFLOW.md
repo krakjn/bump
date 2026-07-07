@@ -105,13 +105,13 @@ substitution. Suffix output requires the job to run inside a git checkout.
 Install `bump` in a workflow with the composite action at the repo root:
 
 ```yaml
-- uses: launchfirestorm/bump@v7
+- uses: krakjn/bump@v7
 ```
 
 Pass a custom token if you need to avoid unauthenticated GitHub API rate limits:
 
 ```yaml
-- uses: launchfirestorm/bump@v7
+- uses: krakjn/bump@v7
   with:
     token: ${{ secrets.YOUR_TOKEN_HERE }}
 ```

@@ -5,7 +5,7 @@
  *  ) _ < )(__)(  )    (  )___/
  * (____/(______)(_/\/\_)(__)  
  *
- * https://github.com/launchfirestorm/bump
+ * https://github.com/krakjn/bump
  */
 
 public class Version {
