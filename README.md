@@ -4,15 +4,15 @@
  ) _ < )(__)(  )    (  )___/
 (____/(______)(_/\/\_)(__)  
 ```
-# `bump` automatic versioning
+---
 
-> An un-opinionated command-line tool for **SemVer** and **CalVer** management with TOML-based configuration and multi-language code generation. No assumption is made — you `bump` when you want, how you want.
+`bump` -> un-opinionated, dead-simple, automatic, versioning.
 
-### TL;DR
-- A **regex-less** way to do versioning 😎
-- Human/Machine readable `bump.toml`
-- Flexible for your needs
-- Then stop thinking about versioning!
+## TL;DR
+- Human readable `bump.toml`, which can be modified
+- _No **regex**_, control your versions declaratively
+- A version tracked `bump.toml` can flex to the users needs.
+- DONE, stop thinking about versioning!
 
 
 ## Why?
