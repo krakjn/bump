@@ -59,6 +59,7 @@ jobs:
       run: |
         ./tests/output.sh
         ./tests/malformed.sh
+        ./tests/mode-swap.sh
 
     - name: Prepare binary for upload
       shell: bash

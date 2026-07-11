@@ -53,44 +53,14 @@ fn set<V: Into<Value>>(
     Ok(())
 }
 
-fn warn_mode_key_mismatch(path: &Path, doc: &DocumentMut) -> Result<(), BumpError> {
-    let base = table(doc, "base", path)?;
+const SEMVER_KEYS: &[&str] = &["major", "minor", "patch"];
+const CALVER_KEYS: &[&str] = &["year", "month", "day"];
 
-    let bumpfile_mode = base
-        .get("mode")
-        .and_then(|v| v.as_str())
-        .unwrap_or(VersionMode::Semver.as_str());
-    let semver_mode = VersionMode::Semver.as_str();
-    let calver_mode = VersionMode::Calver.as_str();
-    let has_calver_keys = ["year", "month", "day"]
-        .iter()
-        .any(|key| base.contains_key(key));
-    let has_semver_keys = ["major", "minor", "patch"]
-        .iter()
-        .any(|key| base.contains_key(key));
-
-    match bumpfile_mode {
-        semver_mode => {
-            if has_calver_keys {
-                println!(
-                    "bump warning: [base].mode is semver, but found calver keys (year/month/day) in {}. \
-                    \nThey will be treated as major/minor/patch and rewritten on save.",
-                    path.display()
-                );
-            }
-        }
-        calver_mode => {
-            if has_semver_keys {
-                println!(
-                    "bump warning: [base].mode is calver, but found semver keys (major/minor/patch) in {}. \
-                    \nThey will be treated as year/month/day and rewritten on save.",
-                    path.display()
-                );
-            }
-        }
-    }
-
-    Ok(())
+fn present_keys<'a>(base: &Table, keys: &'a [&str]) -> Vec<&'a str> {
+    keys.iter()
+        .copied()
+        .filter(|key| base.contains_key(key))
+        .collect()
 }
 
 fn write_base(doc: &mut DocumentMut, version: &Version, path: &Path) -> Result<(), BumpError> {
@@ -245,8 +215,6 @@ impl BumpFile {
             .parse::<DocumentMut>()
             .map_err(|e| BumpError::ParseError(format!("Failed to parse TOML document: {e}")))?;
 
-        warn_mode_key_mismatch(path, &doc)?;
-
         Ok(Self {
             path: path.to_path_buf(),
             doc,
@@ -290,6 +258,37 @@ impl BumpFile {
                 self.path.display()
             ))
         })
+    }
+
+    /// Warn when [base] keys don't match mode. Always returns `Ok` after printing.
+    pub fn mismatch(&self) -> Result<(), BumpError> {
+        let base = table(&self.doc, "base", &self.path)?;
+        let mode = base
+            .get("mode")
+            .and_then(|v| v.as_str())
+            .unwrap_or(VersionMode::Semver.as_str());
+
+        let (wrong, rewrite) = if mode == VersionMode::Calver.as_str() {
+            (
+                present_keys(base, SEMVER_KEYS),
+                "major/minor/patch → year/month/day",
+            )
+        } else {
+            (
+                present_keys(base, CALVER_KEYS),
+                "year/month/day → major/minor/patch",
+            )
+        };
+
+        if !wrong.is_empty() {
+            eprintln!(
+                "bump warning: [base].mode is {mode}, but found mismatched keys {wrong:?} in {}.\n\
+                 On save, keys will be rewritten ({rewrite}).",
+                self.path.display(),
+            );
+        }
+
+        Ok(())
     }
 
     pub fn save(&mut self, version: &Version) -> Result<(), BumpError> {

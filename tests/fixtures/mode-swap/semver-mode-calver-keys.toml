@@ -1,0 +1,25 @@
+prefix = "v"
+
+[base]
+mode = "semver"
+delimiter = "."
+year = 2020
+month = 1
+day = 1
+
+[phase]
+separator = "-"
+name = ""
+delimiter = "."
+distance = 0
+
+[suffix]
+mode = "git_sha"
+separator = "+"
+
+[timestamp]
+format = "%Y-%m-%d %H:%M:%S %Z"
+last = "1970-01-01 00:00:00 UTC"
+
+[label]
+position = "after-base"

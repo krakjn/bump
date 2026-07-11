@@ -163,12 +163,27 @@ impl Version {
             }
             BumpType::Minor => {
                 self.right_mode(VersionMode::Semver)?;
+                if self.base.minor.is_none() {
+                    return Err(BumpError::LogicError(format!(
+                        "Operation only valid for version.minor is set"
+                    )));
+                }
                 self.base.minor = self.base.minor.map(|m| m + 1);
+                if self.base.patch.is_none() {
+                    return Err(BumpError::LogicError(format!(
+                        "Operation only valid for version.patch is set"
+                    )));
+                }
                 self.base.patch = self.base.patch.map(|_| 0);
                 self.clear_phase();
             }
             BumpType::Patch => {
                 self.right_mode(VersionMode::Semver)?;
+                if self.base.patch.is_none() {
+                    return Err(BumpError::LogicError(format!(
+                        "Operation only valid for version.patch is set"
+                    )));
+                }
                 self.base.patch = self.base.patch.map(|p| p + 1);
                 self.clear_phase();
             }

@@ -124,6 +124,7 @@ pub fn apply(matches: &ArgMatches) -> Result<(), BumpError> {
 
     if has_formal {
         version.bump(&get_bump_type(matches)?)?;
+        bumpfile.mismatch()?;
         println!(
             "bumped {} to {}",
             bumpfile.path().display(),
