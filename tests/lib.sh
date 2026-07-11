@@ -63,38 +63,154 @@ assert_prints() {
     echo
 }
 
-assert_warns_and_prints() {
+assert_warns_on_bump() {
     local name="$1"
     local warn_pattern="$2"
-    local expected="$3"
-    local bumpfile="$4"
+    local bumpfile="$3"
+    local tmp
     local output
+    local stderr
     local status=0
+
+    tmp="$(mktemp)"
+    cp "$bumpfile" "$tmp"
 
     echo "[$name]"
     set +e
-    output="$(bump print "$bumpfile" 2>&1)"
+    output="$(bump "$tmp" --patch 2>"${tmp}.err")"
+    stderr="$(cat "${tmp}.err")"
     status=$?
     set -e
 
+    rm -f "${tmp}.err" "$tmp"
+
     if [[ "$status" -ne 0 ]]; then
         echo "expected success with warning, but command failed"
-        echo "output: $output"
+        echo "stdout: $output"
+        echo "stderr: $stderr"
         exit 1
     fi
 
-    if [[ "$output" != *"$warn_pattern"* ]]; then
+    if [[ "$stderr" != *"$warn_pattern"* ]]; then
         echo "expected warning containing: $warn_pattern"
-        echo "got: $output"
+        echo "stderr: $stderr"
         exit 1
     fi
 
-    local actual="${output##*$'\n'}"
+    echo "ok"
+    echo
+}
+
+base_section() {
+    awk '/^\[base\]/{flag=1; next} /^\[/{flag=0} flag' "$1"
+}
+
+assert_base_has_key() {
+    local file="$1"
+    local key="$2"
+    if ! base_section "$file" | grep -q "^${key} ="; then
+        echo "expected [base] to contain key: $key"
+        echo "base section:"
+        base_section "$file"
+        exit 1
+    fi
+}
+
+assert_base_lacks_key() {
+    local file="$1"
+    local key="$2"
+    if base_section "$file" | grep -q "^${key} ="; then
+        echo "expected [base] to lack key: $key"
+        echo "base section:"
+        base_section "$file"
+        exit 1
+    fi
+}
+
+assert_print_silent() {
+    local name="$1"
+    local expected="$2"
+    local bumpfile="$3"
+    local actual
+    local stderr
+    local tmp
+
+    tmp="$(mktemp)"
+
+    echo "[$name]"
+    set +e
+    actual="$(bump print "$bumpfile" 2>"$tmp")"
+    stderr="$(cat "$tmp")"
+    set -e
+    rm -f "$tmp"
+
+    if [[ -n "$stderr" ]]; then
+        echo "expected no stderr on print, got: $stderr"
+        exit 1
+    fi
+
     echo "expected: $expected"
     echo "actual:   $actual"
     if [[ "$actual" != "$expected" ]]; then
         exit 1
     fi
+    echo "ok"
+    echo
+}
+
+assert_bump_rewrites_keys() {
+    local name="$1"
+    local bumpfile="$2"
+    local bump_flag="$3"
+    local warn_pattern="$4"
+    shift 4
+    local want_keys=("$@")
+    local tmp
+    local stderr
+    local status=0
+    local key
+
+    tmp="$(mktemp)"
+    cp "$bumpfile" "$tmp"
+
+    echo "[$name]"
+    set +e
+    bump "$tmp" "$bump_flag" >/dev/null 2>"${tmp}.err"
+    stderr="$(cat "${tmp}.err")"
+    status=$?
+    set -e
+    rm -f "${tmp}.err"
+
+    if [[ "$status" -ne 0 ]]; then
+        echo "bump failed"
+        cat "$tmp"
+        exit 1
+    fi
+
+    if [[ "$stderr" != *"$warn_pattern"* ]]; then
+        echo "expected warning containing: $warn_pattern"
+        echo "stderr: $stderr"
+        exit 1
+    fi
+
+    for key in "${want_keys[@]}"; do
+        assert_base_has_key "$tmp" "$key"
+    done
+
+    case "${want_keys[0]}" in
+        major|minor|patch)
+            for key in year month day; do
+                assert_base_lacks_key "$tmp" "$key"
+            done
+            ;;
+        year|month|day)
+            for key in major minor patch; do
+                assert_base_lacks_key "$tmp" "$key"
+            done
+            ;;
+    esac
+
+    rm -f "$tmp"
     echo "ok"
     echo
 }

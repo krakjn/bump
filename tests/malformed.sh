@@ -13,12 +13,12 @@ FIXTURES="$ROOT/tests/fixtures/malformed"
 
 assert_fails \
     "v6-semver" \
-    "'base' table not found" \
+    "missing field \`prefix\`" \
     "$FIXTURES/v6-semver.toml"
 
 assert_fails \
     "v6-calver" \
-    "'base' table not found" \
+    "missing field \`prefix\`" \
     "$FIXTURES/v6-calver.toml"
 
 # TOML syntax and structural errors
@@ -30,12 +30,12 @@ assert_fails \
 
 assert_fails \
     "missing-base" \
-    "'base' table not found" \
+    "missing field \`base\`" \
     "$FIXTURES/missing-base.toml"
 
 assert_fails \
     "base-not-table" \
-    "'base' table not found" \
+    "unknown variant \`mode\`" \
     "$FIXTURES/base-not-table.toml"
 
 assert_fails \
@@ -67,10 +67,14 @@ assert_fails \
 
 # Compatibility warnings and valid input
 
-assert_warns_and_prints \
+assert_prints \
     "semver-with-calver-keys" \
-    "found calver keys (year/month/day)" \
     "v2020.1.1" \
+    "$FIXTURES/semver-with-calver-keys.toml"
+
+assert_warns_on_bump \
+    "semver-with-calver-keys-on-bump" \
+    "keys will be rewritten" \
     "$FIXTURES/semver-with-calver-keys.toml"
 
 assert_prints \

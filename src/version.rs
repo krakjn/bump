@@ -163,12 +163,27 @@ impl Version {
             }
             BumpType::Minor => {
                 self.right_mode(VersionMode::Semver)?;
+                if self.base.minor.is_none() {
+                    return Err(BumpError::LogicError(format!(
+                        "Operation only valid for version.minor is set"
+                    )));
+                }
                 self.base.minor = self.base.minor.map(|m| m + 1);
+                if self.base.patch.is_none() {
+                    return Err(BumpError::LogicError(format!(
+                        "Operation only valid for version.patch is set"
+                    )));
+                }
                 self.base.patch = self.base.patch.map(|_| 0);
                 self.clear_phase();
             }
             BumpType::Patch => {
                 self.right_mode(VersionMode::Semver)?;
+                if self.base.patch.is_none() {
+                    return Err(BumpError::LogicError(format!(
+                        "Operation only valid for version.patch is set"
+                    )));
+                }
                 self.base.patch = self.base.patch.map(|p| p + 1);
                 self.clear_phase();
             }
@@ -184,10 +199,12 @@ impl Version {
             }
             BumpType::Calendar => {
                 self.right_mode(VersionMode::Calver)?;
-                if now.year().cast_unsigned() == self.base.major
-                    && now.month() == self.base.minor.unwrap_or(0)
-                    && now.day() == self.base.patch.unwrap_or(0)
-                {
+                let is_same_date = 
+                    self.base.major == now.year().cast_unsigned()
+                    && self.base.minor.is_none_or(|m| m == now.month())
+                    && self.base.patch.is_none_or(|d| d == now.day());
+
+                if is_same_date {
                     self.phase.distance += 1;
                 } else {
                     self.base.major = now.year().cast_unsigned();
