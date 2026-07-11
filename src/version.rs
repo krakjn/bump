@@ -184,10 +184,12 @@ impl Version {
             }
             BumpType::Calendar => {
                 self.right_mode(VersionMode::Calver)?;
-                if now.year().cast_unsigned() == self.base.major
-                    && now.month() == self.base.minor.unwrap_or(0)
-                    && now.day() == self.base.patch.unwrap_or(0)
-                {
+                let is_same_date = 
+                    self.base.major == now.year().cast_unsigned()
+                    && self.base.minor.is_none_or(|m| m == now.month())
+                    && self.base.patch.is_none_or(|d| d == now.day());
+
+                if is_same_date {
                     self.phase.distance += 1;
                 } else {
                     self.base.major = now.year().cast_unsigned();

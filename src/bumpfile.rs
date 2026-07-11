@@ -53,39 +53,41 @@ fn set<V: Into<Value>>(
     Ok(())
 }
 
-fn set_or_remove(
-    table: &mut Table,
-    key: &str,
-    val: Option<u32>,
-    section: &str,
-    path: &Path,
-) -> Result<(), BumpError> {
-    match val {
-        Some(n) => set(table, key, i64::from(n), section, path),
-        None => {
-            table.remove(key);
-            Ok(())
-        }
-    }
-}
-
 fn warn_mode_key_mismatch(path: &Path, doc: &DocumentMut) -> Result<(), BumpError> {
     let base = table(doc, "base", path)?;
 
-    let mode = base
+    let bumpfile_mode = base
         .get("mode")
         .and_then(|v| v.as_str())
         .unwrap_or(VersionMode::Semver.as_str());
+    let semver_mode = VersionMode::Semver.as_str();
+    let calver_mode = VersionMode::Calver.as_str();
     let has_calver_keys = ["year", "month", "day"]
         .iter()
         .any(|key| base.contains_key(key));
+    let has_semver_keys = ["major", "minor", "patch"]
+        .iter()
+        .any(|key| base.contains_key(key));
 
-    if mode == VersionMode::Semver.as_str() && has_calver_keys {
-        println!(
-            "bump warning: [base].mode is semver, but found calver keys (year/month/day) in {}. \
-            \nThey will be treated as major/minor/patch and rewritten on save.",
-            path.display()
-        );
+    match bumpfile_mode {
+        semver_mode => {
+            if has_calver_keys {
+                println!(
+                    "bump warning: [base].mode is semver, but found calver keys (year/month/day) in {}. \
+                    \nThey will be treated as major/minor/patch and rewritten on save.",
+                    path.display()
+                );
+            }
+        }
+        calver_mode => {
+            if has_semver_keys {
+                println!(
+                    "bump warning: [base].mode is calver, but found semver keys (major/minor/patch) in {}. \
+                    \nThey will be treated as year/month/day and rewritten on save.",
+                    path.display()
+                );
+            }
+        }
     }
 
     Ok(())
@@ -97,22 +99,66 @@ fn write_base(doc: &mut DocumentMut, version: &Version, path: &Path) -> Result<(
     set(base, "mode", version.base.mode.as_str(), "base", path)?;
     set(base, "delimiter", &version.base.delimiter, "base", path)?;
 
-    let (major_key, minor_key, patch_key, old_major, old_minor, old_patch) =
-        if version.base.mode == VersionMode::Calver {
-            ("year", "month", "day", "major", "minor", "patch")
-        } else {
-            ("major", "minor", "patch", "year", "month", "day")
-        };
-
-    set(base, major_key, i64::from(version.base.major), "base", path)?;
-    base.remove(old_major);
-
-    set_or_remove(base, minor_key, version.base.minor, "base", path)?;
-    base.remove(old_minor);
-
-    set_or_remove(base, patch_key, version.base.patch, "base", path)?;
-    base.remove(old_patch);
-
+    match version.base.mode {
+        VersionMode::Calver => {
+            // first remove old keys
+            base.remove("major");
+            base.remove("minor");
+            base.remove("patch");
+            if ! base.contains_key("year") {
+                base.insert("year", value(i64::from(version.base.major)));
+            } else {
+                set(base, "year", i64::from(version.base.major), "base", path)?;
+            }
+            // optional value, if None remove key to allow more flexible versioning
+            if let Some(minor) = version.base.minor {
+                if ! base.contains_key("month") {
+                    base.insert("month", value(i64::from(minor)));
+                } else {
+                    set(base, "month", i64::from(minor), "base", path)?;
+                }
+            } else {
+                base.remove("month");
+            }
+            if let Some(patch) = version.base.patch {
+                if ! base.contains_key("day") {
+                    base.insert("day", value(i64::from(patch)));
+                } else {
+                    set(base, "day", i64::from(patch), "base", path)?;
+                }
+            } else {
+                base.remove("day");
+            }
+        }
+        VersionMode::Semver => {
+            base.remove("year");
+            base.remove("month");
+            base.remove("day");
+            if ! base.contains_key("major") {
+                base.insert("major", value(i64::from(version.base.major)));
+            } else {
+                set(base, "major", i64::from(version.base.major), "base", path)?;
+            }
+            if let Some(minor) = version.base.minor {
+                if ! base.contains_key("minor") {
+                    base.insert("minor", value(i64::from(minor)));
+                } else {
+                    set(base, "minor", i64::from(minor), "base", path)?;
+                }
+            } else {
+                base.remove("minor");
+            }
+            if let Some(patch) = version.base.patch {
+                if ! base.contains_key("patch") {
+                    base.insert("patch", value(i64::from(patch)));
+                } else {
+                    set(base, "patch", i64::from(patch), "base", path)?;
+                }
+            } else {
+                base.remove("patch");
+            }
+        }
+    }
     Ok(())
 }
 
