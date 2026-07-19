@@ -56,8 +56,8 @@ position = "after-base"
 ### `prefix` (top-level)
 
 - Optional leading text printed before the numeric base (for example `v`).
-- Omitted from output with `bump print --no-prefix`.
-- Can be changed in place with `bump --prefix <PREFIX>` (persists to the bumpfile).
+- Omitted from output with `bump --no-prefix`.
+- Can be changed with `bump meta --prefix <PREFIX>` (persists to the bumpfile).
 
 ### `[timestamp]`
 
@@ -85,12 +85,12 @@ For compatibility, `year`, `month`, and `day` are accepted as aliases for
 
 - `mode`: `git_sha` or `branch`.
 - `separator`: separator before the suffix payload (commonly `+`).
-- Requires a git repository when used with `bump print --with-suffix` or `bump print --full`.
-- Can be changed in place with `bump --suffix git_sha|branch` (persists to the bumpfile).
+- Requires a git repository when used with `bump --with-suffix` or `bump --full`.
+- Can be changed with `bump meta --suffix git_sha|branch` (persists to the bumpfile).
 
 ### `[label]`
 
-- `position`: where `bump print --with-label <LABEL>` injects runtime label text.
+- `position`: where `bump --with-label <LABEL>` injects runtime label text.
 - Label value is never written to the bumpfile.
 - The label is only printed when its anchored segment is part of the current
   assembly (for example, a `before-phase` label is omitted when `--no-phase`
@@ -100,15 +100,15 @@ For compatibility, `year`, `month`, and `day` are accepted as aliases for
 
 ### SemVer mode
 
-- Supported bump ops: `--major`, `--minor`, `--patch`, `--phase`.
-- `--calendar` is rejected.
-- `--major`, `--minor`, and `--patch` clear the phase (promotion).
+- Supported bump ops: `major`, `minor`, `patch`, `phase`.
+- `calendar` is rejected.
+- `major`, `minor`, and `patch` clear the phase (promotion).
 - Base format is `<major><delimiter><minor><delimiter><patch>`.
 
 ### CalVer mode
 
-- Supported bump ops: `--calendar`, `--phase`.
-- `--major`, `--minor`, and `--patch` are rejected.
+- Supported bump ops: `calendar`, `phase`.
+- `major`, `minor`, and `patch` are rejected.
 - Month and day values are printed with zero padding in base output.
 
 ## Key Remapping Rules
@@ -123,38 +123,41 @@ Additional safety behavior:
 - If `mode = "semver"` but the file contains `year/month/day`, a warning is
   emitted and keys are rewritten on save.
 
-## Print Output
+## Show Output
 
-Use the `print` subcommand (alias `p`). Flags are stackable except `--only-*`
-and `--full`. All variants emit output **without a trailing newline**.
+Default command (also `bump show`, alias `p`). Flags are stackable except
+`--only-*` and `--full`. All variants emit output **without a trailing newline**.
 
 Default assembly order: `[prefix][base][phase]`, with optional label injection
 at `[label].position`. When `--with-timestamp` or `--full` is used, the timestamp
 is appended after **two spaces**.
 
 ```text
-Print [prefix][base][phase] from BUMPFILE without newline
+Show [prefix][base][phase] from BUMPFILE without newline
 
-Usage: bump print [OPTIONS] [BUMPFILE]
+Usage: bump [OPTIONS] [BUMPFILE]
+       bump show [OPTIONS] [BUMPFILE]
 
 Arguments:
   [BUMPFILE]  Path to the configuration file [default: bump.toml]
 
 Options:
-      --only-prefix         Print [prefix]
-      --only-phase          Print [phase]
-      --only-base           Print [base]
-      --no-prefix           Print [base][phase]
-      --no-phase            Print [prefix][base]
-      --with-suffix         Print [prefix][base][phase][suffix]
-      --with-timestamp      Print [prefix][base][phase][timestamp]
-      --full                Print full output; overrides all print flags except --with-label
+      --only-prefix         Show [prefix]
+      --only-phase          Show [phase]
+      --only-base           Show [base]
+      --no-prefix           Show [base][phase]
+      --no-phase            Show [prefix][base]
+      --with-suffix         Show [prefix][base][phase][suffix]
+      --with-timestamp      Show [prefix][base][phase][timestamp]
+      --full                Show full output; overrides all show flags except --with-label
       --with-label <LABEL>  Inject LABEL at [label].position (not persisted)
   -h, --help                Print help
 ```
 
 `--full` produces `[prefix][base][phase][suffix]  [timestamp]` (suffix and
 timestamp require a git repository for suffix resolution).
+
+Metadata setters live under `bump meta` (e.g. `--prefix`, `--suffix`), not on root.
 
 ## See Also
 

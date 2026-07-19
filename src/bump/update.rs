@@ -34,8 +34,7 @@ fn set_toml_field(
     Ok(())
 }
 
-/// Update a file with the version from the bumpfile
-pub fn modify_file(matches: &ArgMatches) -> Result<(), BumpError> {
+pub fn update(matches: &ArgMatches) -> Result<(), BumpError> {
     let bumpfile = load_bumpfile(matches)?;
     let version = bumpfile.version()?;
     let path_str = matches.get_one::<String>("path").ok_or_else(|| {
@@ -55,10 +54,9 @@ pub fn modify_file(matches: &ArgMatches) -> Result<(), BumpError> {
     }
 }
 
-pub fn cargo_toml(version: &Version, path: &Path) -> Result<(), BumpError> {
+fn cargo_toml(version: &Version, path: &Path) -> Result<(), BumpError> {
     let mut doc = load_toml(path)?;
 
-    // Cargo `package.version` must be semver without a leading `v` (or other prefix).
     let v_str = print::to_string(version, &PrintOptions::no_prefix())?;
     println!("cargo doesn't like a character prefix in Cargo.toml, stripping prefix");
 
@@ -68,10 +66,9 @@ pub fn cargo_toml(version: &Version, path: &Path) -> Result<(), BumpError> {
     Ok(())
 }
 
-pub fn pyproject_toml(version: &Version, path: &Path) -> Result<(), BumpError> {
+fn pyproject_toml(version: &Version, path: &Path) -> Result<(), BumpError> {
     let mut doc = load_toml(path)?;
 
-    // https://packaging.python.org/en/latest/version.html#public-version-identifiers
     let yellow = "\x1b[33m";
     let cyan = "\x1b[36m";
     let purple = "\x1b[35m";

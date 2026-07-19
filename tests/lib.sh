@@ -26,7 +26,7 @@ assert_fails() {
 
     echo "[$name]"
     set +e
-    output="$(bump print "$bumpfile" 2>&1)"
+    output="$(bump "$bumpfile" 2>&1)"
     status=$?
     set -e
 
@@ -53,7 +53,7 @@ assert_prints() {
     local actual
 
     echo "[$name]"
-    actual="$(bump print "$bumpfile")"
+    actual="$(bump "$bumpfile")"
     echo "expected: $expected"
     echo "actual:   $actual"
     if [[ "$actual" != "$expected" ]]; then
@@ -77,7 +77,7 @@ assert_warns_on_bump() {
 
     echo "[$name]"
     set +e
-    output="$(bump "$tmp" --patch 2>"${tmp}.err")"
+    output="$(bump patch "$tmp" 2>"${tmp}.err")"
     stderr="$(cat "${tmp}.err")"
     status=$?
     set -e
@@ -139,13 +139,13 @@ assert_print_silent() {
 
     echo "[$name]"
     set +e
-    actual="$(bump print "$bumpfile" 2>"$tmp")"
+    actual="$(bump "$bumpfile" 2>"$tmp")"
     stderr="$(cat "$tmp")"
     set -e
     rm -f "$tmp"
 
     if [[ -n "$stderr" ]]; then
-        echo "expected no stderr on print, got: $stderr"
+        echo "expected no stderr on show, got: $stderr"
         exit 1
     fi
 
@@ -161,7 +161,7 @@ assert_print_silent() {
 assert_bump_rewrites_keys() {
     local name="$1"
     local bumpfile="$2"
-    local bump_flag="$3"
+    local bump_cmd="$3"
     local warn_pattern="$4"
     shift 4
     local want_keys=("$@")
@@ -175,7 +175,7 @@ assert_bump_rewrites_keys() {
 
     echo "[$name]"
     set +e
-    bump "$tmp" "$bump_flag" >/dev/null 2>"${tmp}.err"
+    bump "$bump_cmd" "$tmp" >/dev/null 2>"${tmp}.err"
     stderr="$(cat "${tmp}.err")"
     status=$?
     set -e

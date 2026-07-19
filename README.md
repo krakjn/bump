@@ -46,31 +46,46 @@ This creates a **BUMPFILE** (default `bump.toml`) in your current directory with
 
 To use CalVer, set `mode = "calver"` under `[base]` in your bumpfile.
 
+## Breaking changes (v7 → v8)
+
+| v7 | v8 |
+|----|----|
+| `bump` with no args → error | `bump` → **show** composed version |
+| `bump print …` / `bump p …` | `bump …` / `bump show …` / `bump p …` |
+| `bump --major` / `--minor` / `--patch` | `bump major` / `minor` / `patch` |
+| `bump --phase` / `bump --phase NAME` | `bump phase` / `bump phase NAME` |
+| `bump --calendar` | `bump calendar` |
+| `bump --prefix X` / `bump --suffix MODE` | `bump meta --prefix X` / `bump meta --suffix MODE` |
+| `bump PATH --patch` | `bump patch PATH` |
+| `bump gen -l LANG -o FILE` | `bump emit LANG -o FILE` |
+
+`init`, `tag`, `update`, `completion`, bumpfile schema, and version assembly rules are unchanged in role.
+
 ## Commands
 
-### Reporting Commands
+### Show (default)
 
-> Often the hard part is getting the version _into other tools_.
-> All `print` variants write output **without a trailing newline**.
+> All show variants write output **without a trailing newline**.
 
 ```bash
-# Default print ([prefix][base][phase])
-bump print [BUMPFILE]
+# Default show ([prefix][base][phase])
+bump [BUMPFILE]
+bump show [BUMPFILE]
 bump p [BUMPFILE]              # alias
 
-# Print variants
-bump print --only-prefix [BUMPFILE]
-bump print --only-phase [BUMPFILE]
-bump print --only-base [BUMPFILE]
-bump print --no-prefix [BUMPFILE]
-bump print --no-phase [BUMPFILE]
-bump print --with-suffix [BUMPFILE]
-bump print --with-timestamp [BUMPFILE]
-bump print --with-label DEV [BUMPFILE]
-bump print --full [BUMPFILE]
+# Show variants
+bump --only-prefix [BUMPFILE]
+bump --only-phase [BUMPFILE]
+bump --only-base [BUMPFILE]
+bump --no-prefix [BUMPFILE]
+bump --no-phase [BUMPFILE]
+bump --with-suffix [BUMPFILE]
+bump --with-timestamp [BUMPFILE]
+bump --with-label DEV [BUMPFILE]
+bump --full [BUMPFILE]
 
 # Stackable (e.g. omit prefix and include suffix)
-bump print --no-prefix --with-suffix [BUMPFILE]
+bump --no-prefix --with-suffix [BUMPFILE]
 ```
 
 Suffix output (`--with-suffix`, `--full`) requires a git repository.
@@ -79,31 +94,32 @@ Suffix output (`--with-suffix`, `--full`) requires a git repository.
 
 ```bash
 # Bump version numbers (updates BUMPFILE)
-bump --major     # 1.0.0 -> 2.0.0, clears phase
-bump --minor     # 1.0.0 -> 1.1.0, clears phase
-bump --patch     # 1.0.0 -> 1.0.1, clears phase
+bump major     # 1.0.0 -> 2.0.0, clears phase
+bump minor     # 1.0.0 -> 1.1.0, clears phase
+bump patch     # 1.0.0 -> 1.0.1, clears phase
 
 # Phase workflow
-bump --phase alpha  # 1.1.0 -> 1.1.0-alpha.1
-bump --phase        # increment phase distance, e.g. 1.1.0-alpha.2
-bump --phase beta   # switch phase, e.g. 1.1.0-beta.1
+bump phase alpha  # 1.1.0 -> 1.1.0-alpha.1
+bump phase        # increment phase distance, e.g. 1.1.0-alpha.2
+bump phase beta   # switch phase, e.g. 1.1.0-beta.1
 ```
 
 ### CalVer Commands
 
 ```bash
 # Set [base].mode = "calver" in BUMPFILE, then:
-bump --calendar [BUMPFILE]  # Updates to current date (e.g., 2026.02.25)
+bump calendar [BUMPFILE]  # Updates to current date (e.g., 2026.02.25)
 # Same-day bumps automatically increment phase distance
 ```
 
-### Bumpfile Meta Flags
+### Metadata
 
-Update bumpfile fields without a formal version bump:
+Update bumpfile metadata fields (extension point for future setters):
 
 ```bash
-bump --prefix v2-
-bump --suffix branch
+bump meta --prefix v2-
+bump meta --suffix branch
+bump meta --prefix v- --suffix git_sha
 ```
 
 ### Mode/key compatibility behavior
@@ -111,27 +127,33 @@ bump --suffix branch
 - If `mode = "semver"` and keys like `year/month/day` are found, bump prints a warning and rewrites keys as `major/minor/patch` on save.
 - If `mode = "calver"` and keys like `major/minor/patch` are found, bump rewrites keys as `year/month/day` on save.
 
-### Code Generation
+### Emit
 
 **PRO TIP**: Add generated version files to `.gitignore` to avoid "behind by one" issues
 
 ```bash
-# Generate version files for different languages
-bump gen --lang c --output version.h [BUMPFILE]
-bump gen --lang go --output version.go [BUMPFILE]
-bump gen --lang java --output Version.java [BUMPFILE]
-bump gen --lang csharp --output Version.cs [BUMPFILE]
-bump gen --lang python --output version.py [BUMPFILE]
+# Language templates → files
+bump emit c -o version.h [BUMPFILE]
+bump emit go -o version.go [BUMPFILE]
+bump emit java -o Version.java [BUMPFILE]
+bump emit csharp -o Version.cs [BUMPFILE]
+bump emit python -o version.py [BUMPFILE]
 
-# Generate multiple files at once
-bump gen --lang c --output version.h --output include/version.h [BUMPFILE]
+# Multiple files
+bump emit c -o version.h -o include/version.h [BUMPFILE]
 
-# Use custom bumpfile
-bump gen --lang c --output version.h custom.toml
+# Structured / raw → stdout (or -o)
+bump emit raw
+bump emit json
+bump emit toml -o version.toml
+bump emit yaml --case camel
 
-# SemVer generates: VERSION, VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, etc.
-# CalVer generates: VERSION_STRING only (simplified for date-based versions)
+# Prepend text to emitted payload (not bumpfile prefix)
+bump emit raw --prefix "MYLIB_"
 ```
+
+Formats: `raw`, `c`, `java`, `csharp`, `go`, `python`, `json`, `toml`, `yaml`.
+`--case` applies to structured keys only.
 
 ### Git Integration
 
@@ -158,13 +180,13 @@ bump update pyproject.toml [BUMPFILE]
 The composite action `action.yml` at the repo root installs bump for the job's OS/arch:
 
 ```yaml
-- uses: krakjn/bump@v7
+- uses: krakjn/bump@v8
 ```
 
 If your token differs from the default `GITHUB_TOKEN`:
 
 ```yaml
-- uses: krakjn/bump@v7
+- uses: krakjn/bump@v8
   with:
     token: ${{ secrets.YOUR_TOKEN_HERE }}
 ```
@@ -173,13 +195,13 @@ If your token differs from the default `GITHUB_TOKEN`:
 
 you can inject bump _everywhere_
 ```bash
-sed -i "s|REPLACE_ME|$(bump print --no-prefix)|g" somefile
+sed -i "s|REPLACE_ME|$(bump --no-prefix)|g" somefile
 ```
 
 ```cmake
 # CMakeLists.txt
 execute_process(
-  COMMAND bump print --only-base
+  COMMAND bump --only-base
   WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/
   OUTPUT_VARIABLE VERSION)
 project("your-app" VERSION ${VERSION} LANGUAGES CXX C)
@@ -221,7 +243,7 @@ bump completion powershell | Out-String | Invoke-Expression
 Add-Content $PROFILE 'bump completion powershell | Out-String | Invoke-Expression'
 ```
 
-- **[Configuration Reference](docs/CONFIGURATION.md)** — bumpfile schema, print flags, and mode behavior
+- **[Configuration Reference](docs/CONFIGURATION.md)** — bumpfile schema, show flags, and mode behavior
 - **[Workflow Guide](docs/WORKFLOW.md)** — release pipelines, phases, labels, and CI examples
 - **[Contributing Guide](docs/CONTRIBUTING.md)** — build from source, run integration tests, and project layout
 

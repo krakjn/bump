@@ -94,13 +94,16 @@ fn write_output(lang: Language, path: &Path, content: String) -> Result<(), Bump
     Ok(())
 }
 
-pub fn output_file(lang: Language, version: &Version, path: &Path) -> Result<(), BumpError> {
+pub fn render(lang: Language, version: &Version) -> Result<String, BumpError> {
     let fields = output_fields(version)?;
     let mode = version.base.mode;
     let tmpl = lang.template(mode);
-    let content = match mode {
+    Ok(match mode {
         VersionMode::Calver => render_calver(tmpl, &fields),
         VersionMode::Semver => render_semver(tmpl, &fields),
-    };
-    write_output(lang, path, content)
+    })
+}
+
+pub fn output_file(lang: Language, version: &Version, path: &Path) -> Result<(), BumpError> {
+    write_output(lang, path, render(lang, version)?)
 }

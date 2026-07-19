@@ -42,12 +42,15 @@ Integration tests require a release build (see below).
 
 ### Running Tests
 
-Integration tests live in `tests/output.sh`. They exercise `bump print` output across
-SemVer phase and formal bumps, CalVer calendar bumps, and all `[label].position` values.
+Integration tests live under `tests/`. `output.sh` exercises show output across
+SemVer phase and formal bumps, CalVer calendar bumps, label positions, and emit smoke.
+Also run `malformed.sh` and `mode-swap.sh`.
 
 ```bash
 cargo build --release
 ./tests/output.sh
+./tests/malformed.sh
+./tests/mode-swap.sh
 ```
 
 When testing a cross-compiled binary, set `BUMP_BIN` to the built artifact path:
@@ -60,7 +63,7 @@ BUMP_BIN=target/x86_64-unknown-linux-musl/release/bump ./tests/output.sh
 The script reinitializes `bump.toml` in the repository root via `bump init`; any local
 changes to that file are overwritten.
 
-CI runs `./tests/output.sh` on native (non-cross-compiled) Linux and macOS jobs after
+CI runs the shell suites on native (non-cross-compiled) Linux and macOS jobs after
 `cargo build --release --target <triple>`, with `BUMP_BIN` set to
 `target/<triple>/release/bump`.
 
@@ -69,18 +72,24 @@ CI runs `./tests/output.sh` on native (non-cross-compiled) Linux and macOS jobs 
 ```
 bump/
 ├── src/
-│   ├── main.rs         # Entry point and command routing
+│   ├── main.rs         # Thin 1:1 dispatch to bump::*
 │   ├── cli.rs          # Command-line interface (clap)
-│   ├── bump.rs         # Core bump, init, tag, and gen logic
-│   ├── version.rs      # Version struct, TOML parsing, and bumping
-│   ├── print.rs        # Print subcommand and output assembly
-│   ├── lang.rs         # Code generation for multiple languages
-│   ├── update.rs       # File updating (Cargo.toml, pyproject.toml)
+│   ├── bump/           # CLI entrypoints (1:1 with commands)
+│   │   ├── show.rs
+│   │   ├── mutate.rs
+│   │   ├── meta.rs
+│   │   ├── emit.rs
+│   │   ├── init.rs
+│   │   ├── tag.rs
+│   │   └── update.rs
+│   ├── version.rs      # Version struct and bumping rules
+│   ├── print.rs        # Version string assembly (library)
+│   ├── lang.rs         # Language template rendering
+│   ├── bumpfile.rs     # Load/save bump.toml
 │   └── templates/      # Embedded bump.toml and language templates
-├── tests/
-│   └── output.sh       # Shell integration tests for print output
+├── tests/              # Shell integration tests
 ├── docs/               # Documentation
-├── install/            # Release install scripts (get_bump.sh, get_bump.ps1)
+├── install/            # Release install scripts
 ├── action.yml          # GitHub Action to install bump in workflows
 ├── .github/workflows/  # CI build, test, and publish
 └── Cargo.toml
@@ -90,7 +99,7 @@ bump/
 
 1. Create a feature branch
 1. Make your changes
-1. Run `./tests/output.sh` to ensure everything works
+1. Run the integration test suites to ensure everything works
 1. Submit a pull request
 
 ## Questions?

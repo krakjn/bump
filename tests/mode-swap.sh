@@ -28,7 +28,7 @@ assert_print_silent \
 assert_bump_rewrites_keys \
     "semver-mode-calver-keys/bump-patch" \
     "$FIXTURES/semver-mode-calver-keys.toml" \
-    --patch \
+    patch \
     "keys will be rewritten" \
     major minor patch
 
@@ -36,7 +36,7 @@ assert_bump_rewrites_keys \
 assert_bump_rewrites_keys \
     "calver-mode-semver-keys/bump-calendar" \
     "$FIXTURES/calver-mode-semver-keys.toml" \
-    --calendar \
+    calendar \
     "keys will be rewritten" \
     year month day
 
@@ -45,7 +45,7 @@ tmp="$(mktemp)"
 cp "$FIXTURES/calver-mode-year-only.toml" "$tmp"
 echo "[calver-mode-year-only/bump-calendar]"
 set +e
-bump "$tmp" --calendar >/dev/null 2>"${tmp}.err"
+bump calendar "$tmp" >/dev/null 2>"${tmp}.err"
 set -e
 if [[ "$(cat "${tmp}.err")" != *"keys will be rewritten"* ]]; then
     echo "expected rewrite warning"

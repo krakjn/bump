@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-# Integration tests for bump print output.
-# Tier 1: workflow sections with full print-flag permutations (single label position).
+# Integration tests for bump show output.
+# Tier 1: workflow sections with full show-flag permutations (single label position).
 # Tier 2: all six label slots with focused label-placement assertions.
 
 source "$(dirname "$0")/lib.sh"
@@ -59,7 +59,7 @@ refresh_metadata() {
 
 setup_bumpfile() {
     bump init >/dev/null
-    bump --prefix "$PREFIX" >/dev/null
+    bump meta --prefix "$PREFIX" >/dev/null
     refresh_metadata
 }
 
@@ -77,7 +77,7 @@ format_phase() {
     fi
 }
 
-# Mirror print.rs label slot assembly.
+# Mirror show/print.rs label slot assembly.
 # Args: prefix base phase label_pos no_prefix no_phase with_label
 assemble() {
     local prefix="$1"
@@ -245,15 +245,15 @@ section_banner "Phase bumping"
 
 setup_bumpfile
 
-bump --phase "$PHASE_NAMED" >/dev/null
+bump phase "$PHASE_NAMED" >/dev/null
 refresh_metadata
 run_print_permutations "phase/named" "$PREFIX" "0.1.0" "$PHASE_NAMED" "1" "$DEFAULT_LABEL_POSITION"
 
-bump --phase >/dev/null
+bump phase >/dev/null
 refresh_metadata
 run_print_permutations "phase/increment" "$PREFIX" "0.1.0" "$PHASE_NAMED" "2" "$DEFAULT_LABEL_POSITION"
 
-bump --phase beta >/dev/null
+bump phase beta >/dev/null
 refresh_metadata
 run_print_permutations "phase/switch-beta" "$PREFIX" "0.1.0" "beta" "1" "$DEFAULT_LABEL_POSITION"
 
@@ -265,15 +265,15 @@ section_banner "Formal bumping"
 
 setup_bumpfile
 
-bump --patch >/dev/null
+bump patch >/dev/null
 refresh_metadata
 run_print_permutations "formal/patch" "$PREFIX" "0.1.1" "" "0" "$DEFAULT_LABEL_POSITION"
 
-bump --minor >/dev/null
+bump minor >/dev/null
 refresh_metadata
 run_print_permutations "formal/minor" "$PREFIX" "0.2.0" "" "0" "$DEFAULT_LABEL_POSITION"
 
-bump --major >/dev/null
+bump major >/dev/null
 refresh_metadata
 run_print_permutations "formal/major" "$PREFIX" "1.0.0" "" "0" "$DEFAULT_LABEL_POSITION"
 
@@ -288,11 +288,11 @@ CALVER_TODAY="$(today_calver_base)"
 init_calver
 refresh_metadata
 
-bump --calendar >/dev/null
+bump calendar >/dev/null
 refresh_metadata
 run_print_permutations "calendar/date" "" "$CALVER_TODAY" "" "0" "$DEFAULT_LABEL_POSITION"
 
-bump --calendar >/dev/null
+bump calendar >/dev/null
 refresh_metadata
 run_print_permutations "calendar/same-day" "" "$CALVER_TODAY" "" "1" "$DEFAULT_LABEL_POSITION"
 
@@ -305,9 +305,30 @@ section_banner "Label positions"
 for label_pos in "${LABEL_POSITIONS[@]}"; do
     setup_bumpfile
     set_label_position "$label_pos"
-    bump --phase "$PHASE_NAMED" >/dev/null
+    bump phase "$PHASE_NAMED" >/dev/null
     refresh_metadata
     run_label_slots "$label_pos" "$PREFIX" "0.1.0" "$PHASE_NAMED" "1"
 done
+
+# ---------------------------------------------------------------------------
+# Emit smoke
+# ---------------------------------------------------------------------------
+
+section_banner "Emit"
+
+setup_bumpfile
+EMIT_TMP="$(mktemp)"
+bump emit raw --prefix "VER=" >"$EMIT_TMP"
+actual="$(cat "$EMIT_TMP")"
+expected="VER=v-0.1.0"
+echo "[emit/raw-prefix]"
+echo "expected: $expected"
+echo "actual:   $actual"
+if [[ "$actual" != "$expected" ]]; then
+    exit 1
+fi
+rm -f "$EMIT_TMP"
+echo "ok"
+echo
 
 echo "All output tests passed."
