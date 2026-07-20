@@ -42,28 +42,25 @@ Integration tests require a release build (see below).
 
 ### Running Tests
 
-Integration tests live under `tests/`. `output.sh` exercises show output across
-SemVer phase and formal bumps, CalVer calendar bumps, label positions, and emit smoke.
-Also run `malformed.sh` and `mode-swap.sh`.
+Integration tests live under `tests/`. Run the full behavior suite with one
+entrypoint (covers show, mutate, meta, emit, init, tag, update, schema, and
+completion):
 
 ```bash
 cargo build --release
-./tests/output.sh
-./tests/malformed.sh
-./tests/mode-swap.sh
+./tests/run.sh
 ```
 
 When testing a cross-compiled binary, set `BUMP_BIN` to the built artifact path:
 
 ```bash
 cargo build --release --target x86_64-unknown-linux-musl
-BUMP_BIN=target/x86_64-unknown-linux-musl/release/bump ./tests/output.sh
+BUMP_BIN=target/x86_64-unknown-linux-musl/release/bump ./tests/run.sh
 ```
 
-The script reinitializes `bump.toml` in the repository root via `bump init`; any local
-changes to that file are overwritten.
+Suites run in isolated temp workspaces and do not modify a repo-root `bump.toml`.
 
-CI runs the shell suites on native (non-cross-compiled) Linux and macOS jobs after
+CI runs `./tests/run.sh` on native (non-cross-compiled) Linux and macOS jobs after
 `cargo build --release --target <triple>`, with `BUMP_BIN` set to
 `target/<triple>/release/bump`.
 
@@ -88,7 +85,7 @@ bump/
 │   ├── compose.rs      # Version string assembly (library)
 │   ├── bumpfile.rs     # Load/save bump.toml
 │   └── templates/      # Init bump.toml template only
-├── tests/              # Shell integration tests
+├── tests/              # Behavior suites + run.sh entrypoint
 ├── docs/               # Documentation
 ├── install/            # Release install scripts
 ├── action.yml          # GitHub Action to install bump in workflows
@@ -100,7 +97,7 @@ bump/
 
 1. Create a feature branch
 1. Make your changes
-1. Run the integration test suites to ensure everything works
+1. Run `./tests/run.sh` to ensure everything works
 1. Submit a pull request
 
 ## Questions?

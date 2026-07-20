@@ -13,26 +13,26 @@ use crate::cmd::BumpError;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Case {
-    Camel,
-    Pascal,
+    /// version_string
     Snake,
-    Kebab,
-    Title,
-    Lowercase,
+    /// versionString
+    Camel,
+    /// VersionString
+    Pascal,
+    /// VERSION_STRING
     Uppercase,
 }
 
 impl Case {
     pub fn parse(s: &str) -> Result<Self, BumpError> {
         match s {
+            "snake" => Ok(Self::Snake),
             "camel" => Ok(Self::Camel),
             "pascal" => Ok(Self::Pascal),
-            "snake" => Ok(Self::Snake),
-            "kebab" => Ok(Self::Kebab),
-            "title" => Ok(Self::Title),
-            "lowercase" => Ok(Self::Lowercase),
             "uppercase" => Ok(Self::Uppercase),
-            other => Err(BumpError::LogicError(format!("Invalid case: {other}"))),
+            other => Err(BumpError::LogicError(format!(
+                "Invalid case: '{other}'. Expected snake, camel, pascal, or uppercase."
+            ))),
         }
     }
 
@@ -43,8 +43,7 @@ impl Case {
             .map(|w| w.to_lowercase())
             .collect();
         match self {
-            Self::Snake | Self::Lowercase => words.join("_"),
-            Self::Kebab => words.join("-"),
+            Self::Snake => words.join("_"),
             Self::Uppercase => words
                 .iter()
                 .map(|w| w.to_uppercase())
@@ -61,7 +60,7 @@ impl Case {
                 }
                 out
             }
-            Self::Pascal | Self::Title => words.iter().map(|w| capitalize(w)).collect(),
+            Self::Pascal => words.iter().map(|w| capitalize(w)).collect(),
         }
     }
 }
@@ -114,12 +113,13 @@ pub fn render(format: Format, fields: &Fields) -> Result<String, BumpError> {
 }
 
 pub(crate) fn nested_root_key(fields: &Fields) -> String {
-    format!("{}{}", fields.emit_prefix, fields.case.apply("version"))
+    // Markup formats always use snake keys for stable, parse-friendly structure.
+    format!("{}{}", fields.emit_prefix, Case::Snake.apply("version"))
 }
 
-/// Fields nested under the version object/table (short names, cased; no emit_prefix).
+/// Fields nested under the version object/table. Markup ignores --case (always snake).
 pub(crate) fn nested_pairs(fields: &Fields) -> Vec<(String, String)> {
-    let key = |name: &str| fields.case.apply(name);
+    let key = |name: &str| Case::Snake.apply(name);
     vec![
         (key("prefix"), fields.version_prefix.clone()),
         (key("major"), fields.version_major.to_string()),

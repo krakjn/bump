@@ -142,13 +142,12 @@ bump emit python -o version.py [BUMPFILE]
 # Multiple files
 bump emit c -o version.h -o include/version.h [BUMPFILE]
 
-# Structured / raw → stdout (or -o)
-bump emit raw
+# Structured markup (json/toml/yaml): nested under version; --case ignored
 bump emit json
 bump emit toml -o version.toml
-bump emit yaml --case camel
+bump emit yaml
 
-# Prefix and case identifier names (not bumpfile version prefix)
+# Language/raw: --prefix and --case shape identifier names
 bump emit c --prefix "MYLIB_" --case uppercase -o version.h
 # → #define MYLIB_VERSION_STRING "…"
 bump emit raw --prefix "app_" --case camel
@@ -156,7 +155,7 @@ bump emit raw --prefix "app_" --case camel
 ```
 
 Formats: `raw`, `c`, `java`, `csharp`, `go`, `python`, `json`, `toml`, `yaml`.
-`--case` applies to structured keys only.
+`--case`: `snake` | `camel` | `pascal` | `uppercase` (default) for language/raw identifiers; ignored for json/toml/yaml (always snake keys).
 
 ### Git Integration
 

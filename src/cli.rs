@@ -185,17 +185,14 @@ pub fn cli() -> Command {
                         .long("case")
                         .value_name("CASE")
                         .value_parser(clap::builder::PossibleValuesParser::new([
+                            "snake",
                             "camel",
                             "pascal",
-                            "snake",
-                            "kebab",
-                            "title",
-                            "lowercase",
                             "uppercase",
                         ]))
                         .num_args(1)
                         .default_value("uppercase")
-                        .help("Identifier case for emit bindings (languages + structured)"),
+                        .help("Identifier case for language/raw emit (ignored for json/toml/yaml)"),
                 )
                 .arg(
                     Arg::new("prefix")

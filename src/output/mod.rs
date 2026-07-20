@@ -52,7 +52,6 @@ impl Format {
 #[derive(Debug, Clone)]
 pub struct Fields {
     pub emit_prefix: String,
-    pub case: Case,
     pub case_prefix: String,
     pub case_major: String,
     pub case_minor: String,
@@ -76,7 +75,6 @@ impl Fields {
     pub fn populate(emit_prefix: &str, case: Case, version: &Version) -> Result<Self, BumpError> {
         Ok(Self {
             emit_prefix: emit_prefix.to_string(),
-            case,
             case_prefix: case.apply("VERSION_PREFIX"),
             case_major: case.apply("VERSION_MAJOR"),
             case_minor: case.apply("VERSION_MINOR"),
