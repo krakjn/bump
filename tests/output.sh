@@ -77,7 +77,7 @@ format_phase() {
     fi
 }
 
-# Mirror show/print.rs label slot assembly.
+# Mirror compose.rs label slot assembly.
 # Args: prefix base phase label_pos no_prefix no_phase with_label
 assemble() {
     local prefix="$1"

@@ -6,7 +6,7 @@ mod bump;
 mod bumpfile;
 mod cli;
 mod lang;
-mod print;
+mod compose;
 mod version;
 
 fn egress(result: Result<(), BumpError>) -> ExitCode {

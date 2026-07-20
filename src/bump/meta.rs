@@ -1,5 +1,5 @@
 use crate::bump::{BumpError, load_bumpfile};
-use crate::print::{self, PrintOptions};
+use crate::compose::{self, ComposeOptions};
 use crate::version::SuffixMode;
 use clap::ArgMatches;
 
@@ -23,6 +23,6 @@ pub fn meta(matches: &ArgMatches) -> Result<(), BumpError> {
     }
 
     bumpfile.save(&version)?;
-    print!("{}", print::to_string(&version, &PrintOptions::default())?);
+    print!("{}", compose::to_string(&version, &ComposeOptions::default())?);
     Ok(())
 }

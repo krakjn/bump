@@ -1,5 +1,5 @@
 use crate::bump::{BumpError, BumpType, load_bumpfile};
-use crate::print::{self, PrintOptions};
+use crate::compose::{self, ComposeOptions};
 use clap::ArgMatches;
 
 pub fn mutate(matches: &ArgMatches, bump_type: BumpType) -> Result<(), BumpError> {
@@ -11,7 +11,7 @@ pub fn mutate(matches: &ArgMatches, bump_type: BumpType) -> Result<(), BumpError
     println!(
         "bumped {} to {}",
         bumpfile.path().display(),
-        print::to_string(&version, &PrintOptions::with_timestamp())?
+        compose::to_string(&version, &ComposeOptions::with_timestamp())?
     );
     bumpfile.save(&version)?;
     Ok(())

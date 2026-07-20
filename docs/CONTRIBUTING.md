@@ -83,7 +83,7 @@ bump/
 │   │   ├── tag.rs
 │   │   └── update.rs
 │   ├── version.rs      # Version struct and bumping rules
-│   ├── print.rs        # Version string assembly (library)
+│   ├── compose.rs      # Version string assembly (library; used by show/emit/…)
 │   ├── lang.rs         # Language template rendering
 │   ├── bumpfile.rs     # Load/save bump.toml
 │   └── templates/      # Embedded bump.toml and language templates

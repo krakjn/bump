@@ -1,6 +1,6 @@
 use crate::bump::{BumpError, ensure_directory_exists, load_bumpfile};
 use crate::lang::{self, Language};
-use crate::print::{self, PrintOptions};
+use crate::compose::{self, ComposeOptions};
 use crate::version::Version;
 use clap::ArgMatches;
 use std::fs;
@@ -84,7 +84,7 @@ fn json_escape(s: &str) -> String {
 }
 
 fn structured_fields(version: &Version) -> Result<Vec<(&'static str, String)>, BumpError> {
-    let version_string = print::to_string(version, &PrintOptions::default())?;
+    let version_string = compose::to_string(version, &ComposeOptions::default())?;
     Ok(vec![
         ("version", version_string),
         ("prefix", version.prefix.clone()),
@@ -165,7 +165,7 @@ fn render_payload(
     case: Case,
 ) -> Result<String, BumpError> {
     match format {
-        "raw" => print::to_string(version, &PrintOptions::default()),
+        "raw" => compose::to_string(version, &ComposeOptions::default()),
         "json" => render_json(version, case),
         "toml" => render_toml(version, case),
         "yaml" => render_yaml(version, case),

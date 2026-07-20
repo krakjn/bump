@@ -1,5 +1,5 @@
 use crate::bump::{BumpError, is_git_repository, load_bumpfile};
-use crate::print::{self, PrintOptions};
+use crate::compose::{self, ComposeOptions};
 use crate::version::Version;
 use clap::ArgMatches;
 use std::process::Command as ProcessCommand;
@@ -27,7 +27,7 @@ fn create_git_tag(version: &Version, message: Option<&str>) -> Result<(), BumpEr
         return Err(BumpError::LogicError("Not in a git repository".to_string()));
     }
 
-    let tag_name = print::to_string(version, &PrintOptions::default())?;
+    let tag_name = compose::to_string(version, &ComposeOptions::default())?;
 
     if git_tag_exists(&tag_name)? {
         return Err(BumpError::Git(format!("Tag '{tag_name}' already exists")));
