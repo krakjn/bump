@@ -1,4 +1,4 @@
-use crate::bump::{BumpError, is_git_repository, load_bumpfile};
+use crate::cmd::{BumpError, is_git_repository, load_bumpfile};
 use crate::compose::{self, ComposeOptions};
 use crate::version::Version;
 use clap::ArgMatches;

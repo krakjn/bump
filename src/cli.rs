@@ -194,8 +194,8 @@ pub fn cli() -> Command {
                             "uppercase",
                         ]))
                         .num_args(1)
-                        .default_value("snake")
-                        .help("Key case for structured formats (json/toml/yaml)"),
+                        .default_value("uppercase")
+                        .help("Identifier case for emit bindings (languages + structured)"),
                 )
                 .arg(
                     Arg::new("prefix")
@@ -204,7 +204,7 @@ pub fn cli() -> Command {
                         .value_parser(clap::value_parser!(String))
                         .allow_hyphen_values(true)
                         .num_args(1)
-                        .help("Prepend PREFIX to emitted output (not bumpfile prefix)"),
+                        .help("Prepend to emitted identifier names (e.g. 'APP_' → APP_VERSION_STRING)"),
                 )
                 .arg(bumpfile_arg()),
         )

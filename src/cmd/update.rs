@@ -1,5 +1,5 @@
 use crate::{
-    bump::{BumpError, load_bumpfile, resolve_path},
+    cmd::{BumpError, load_bumpfile, resolve_path},
     compose::{self, ComposeOptions},
     version::Version,
 };

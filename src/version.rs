@@ -1,4 +1,4 @@
-use crate::bump::{BumpError, BumpType};
+use crate::cmd::{BumpError, BumpType};
 use chrono::Datelike;
 use serde::{Deserialize, Serialize};
 use std::fmt;

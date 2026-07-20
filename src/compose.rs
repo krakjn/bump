@@ -1,4 +1,4 @@
-use crate::bump::{BumpError, get_git_branch, get_git_commit_sha, is_git_repository};
+use crate::cmd::{BumpError, get_git_branch, get_git_commit_sha, is_git_repository};
 use crate::version::{LabelPosition, SuffixMode, Version, VersionMode};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

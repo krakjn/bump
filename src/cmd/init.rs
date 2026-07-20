@@ -1,4 +1,4 @@
-use crate::bump::{BumpError, resolve_path};
+use crate::cmd::{BumpError, resolve_path};
 use crate::bumpfile::BumpFile;
 use clap::ArgMatches;
 

@@ -72,9 +72,9 @@ CI runs the shell suites on native (non-cross-compiled) Linux and macOS jobs aft
 ```
 bump/
 ├── src/
-│   ├── main.rs         # Thin 1:1 dispatch to bump::*
+│   ├── main.rs         # Thin 1:1 dispatch to cmd::*
 │   ├── cli.rs          # Command-line interface (clap)
-│   ├── bump/           # CLI entrypoints (1:1 with commands)
+│   ├── cmd/            # CLI entrypoints (1:1 with commands)
 │   │   ├── show.rs
 │   │   ├── mutate.rs
 │   │   ├── meta.rs
@@ -82,11 +82,12 @@ bump/
 │   │   ├── init.rs
 │   │   ├── tag.rs
 │   │   └── update.rs
+│   ├── output/         # emit FORMAT backends
+│   │   └── format/     # c.rs, go.rs, … + raw/json/toml/yaml
 │   ├── version.rs      # Version struct and bumping rules
-│   ├── compose.rs      # Version string assembly (library; used by show/emit/…)
-│   ├── lang.rs         # Language template rendering
+│   ├── compose.rs      # Version string assembly (library)
 │   ├── bumpfile.rs     # Load/save bump.toml
-│   └── templates/      # Embedded bump.toml and language templates
+│   └── templates/      # Init bump.toml template only
 ├── tests/              # Shell integration tests
 ├── docs/               # Documentation
 ├── install/            # Release install scripts

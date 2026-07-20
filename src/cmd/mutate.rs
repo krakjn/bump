@@ -1,4 +1,4 @@
-use crate::bump::{BumpError, BumpType, load_bumpfile};
+use crate::cmd::{BumpError, BumpType, load_bumpfile};
 use crate::compose::{self, ComposeOptions};
 use clap::ArgMatches;
 

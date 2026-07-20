@@ -317,18 +317,118 @@ done
 section_banner "Emit"
 
 setup_bumpfile
-EMIT_TMP="$(mktemp)"
-bump emit raw --prefix "VER=" >"$EMIT_TMP"
-actual="$(cat "$EMIT_TMP")"
-expected="VER=v-0.1.0"
-echo "[emit/raw-prefix]"
-echo "expected: $expected"
-echo "actual:   $actual"
-if [[ "$actual" != "$expected" ]]; then
-    exit 1
-fi
-rm -f "$EMIT_TMP"
-echo "ok"
-echo
+refresh_metadata
+
+assert_emit_contains() {
+    local name="$1"
+    local needle="$2"
+    shift 2
+    local actual
+    actual="$(bump "$@")"
+    echo "[$name]"
+    echo "needle: $needle"
+    echo "actual: $actual"
+    if [[ "$actual" != *"$needle"* ]]; then
+        exit 1
+    fi
+    echo "ok"
+    echo
+}
+
+# default case is uppercase
+assert_emit_contains \
+    "emit/raw-default-uppercase" \
+    "APP_VERSION_STRING=\"${PREFIX}0.1.0\"" \
+    emit raw --prefix "APP_"
+
+assert_emit_contains \
+    "emit/raw-snake" \
+    "mylib_version_string=\"${PREFIX}0.1.0\"" \
+    emit raw --prefix "mylib_" --case snake
+
+assert_emit_contains \
+    "emit/raw-snake-major" \
+    "mylib_version_major=0" \
+    emit raw --prefix "mylib_" --case snake
+
+assert_emit_contains \
+    "emit/raw-camel" \
+    "app_versionString=\"${PREFIX}0.1.0\"" \
+    emit raw --prefix "app_" --case camel
+
+assert_emit_contains \
+    "emit/raw-pascal" \
+    "App_VersionString=\"${PREFIX}0.1.0\"" \
+    emit raw --prefix "App_" --case pascal
+
+assert_emit_contains \
+    "emit/raw-kebab" \
+    "mylib_version-string=\"${PREFIX}0.1.0\"" \
+    emit raw --prefix "mylib_" --case kebab
+
+assert_emit_contains \
+    "emit/raw-lowercase" \
+    "mylib_version_string=\"${PREFIX}0.1.0\"" \
+    emit raw --prefix "mylib_" --case lowercase
+
+assert_emit_contains \
+    "emit/c-snake" \
+    "#define mylib_version_string \"${PREFIX}0.1.0\"" \
+    emit c --prefix "mylib_" --case snake
+
+assert_emit_contains \
+    "emit/c-snake-prefix" \
+    "#define mylib_version_prefix \"${PREFIX}\"" \
+    emit c --prefix "mylib_" --case snake
+
+assert_emit_contains \
+    "emit/c-uppercase" \
+    "#define APP_VERSION_STRING \"${PREFIX}0.1.0\"" \
+    emit c --prefix "APP_" --case uppercase
+
+assert_emit_contains \
+    "emit/c-camel" \
+    "#define app_versionString \"${PREFIX}0.1.0\"" \
+    emit c --prefix "app_" --case camel
+
+assert_emit_contains \
+    "emit/json-snake" \
+    "\"mylib_version\": {" \
+    emit json --prefix "mylib_" --case snake
+
+assert_emit_contains \
+    "emit/json-snake-prefix" \
+    "\"prefix\": \"${PREFIX}\"" \
+    emit json --prefix "mylib_" --case snake
+
+assert_emit_contains \
+    "emit/json-snake-string" \
+    "\"string\": \"${PREFIX}0.1.0\"" \
+    emit json --prefix "mylib_" --case snake
+
+assert_emit_contains \
+    "emit/toml-snake" \
+    "[mylib_version]" \
+    emit toml --prefix "mylib_" --case snake
+
+assert_emit_contains \
+    "emit/toml-snake-prefix" \
+    "prefix = \"${PREFIX}\"" \
+    emit toml --prefix "mylib_" --case snake
+
+assert_emit_contains \
+    "emit/toml-snake-string" \
+    "string = \"${PREFIX}0.1.0\"" \
+    emit toml --prefix "mylib_" --case snake
+
+assert_emit_contains \
+    "emit/yaml-snake" \
+    "mylib_version:" \
+    emit yaml --prefix "mylib_" --case snake
+
+assert_emit_contains \
+    "emit/python-snake" \
+    "mylib_version_string = \"${PREFIX}0.1.0\"" \
+    emit python --prefix "mylib_" --case snake
 
 echo "All output tests passed."

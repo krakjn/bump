@@ -148,8 +148,11 @@ bump emit json
 bump emit toml -o version.toml
 bump emit yaml --case camel
 
-# Prepend text to emitted payload (not bumpfile prefix)
-bump emit raw --prefix "MYLIB_"
+# Prefix and case identifier names (not bumpfile version prefix)
+bump emit c --prefix "MYLIB_" --case uppercase -o version.h
+# → #define MYLIB_VERSION_STRING "…"
+bump emit raw --prefix "app_" --case camel
+# → app_versionString="…"
 ```
 
 Formats: `raw`, `c`, `java`, `csharp`, `go`, `python`, `json`, `toml`, `yaml`.

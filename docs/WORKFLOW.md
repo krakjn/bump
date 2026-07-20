@@ -95,7 +95,8 @@ bump --only-base
 bump --full
 bump --with-suffix
 bump --with-label BUILD_ID
-bump emit raw --prefix "VERSION="
+bump emit raw --prefix "APP_"
+bump emit c --prefix "APP_" --case uppercase -o version.h
 ```
 
 All show commands emit without a trailing newline, so they are safe for shell
