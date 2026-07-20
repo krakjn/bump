@@ -1,4 +1,4 @@
-use crate::bump::{BumpError, ensure_directory_exists};
+use crate::cmd::{BumpError, ensure_directory_exists};
 use crate::version::{Version, VersionMode};
 use std::{
     fmt, fs, io,

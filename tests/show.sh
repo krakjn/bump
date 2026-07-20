@@ -2,9 +2,7 @@
 
 set -euo pipefail
 
-# Integration tests for bump print output.
-# Tier 1: workflow sections with full print-flag permutations (single label position).
-# Tier 2: all six label slots with focused label-placement assertions.
+# Behavior: compose / show (bare bump, show, p, print) and label slots.
 
 source "$(dirname "$0")/lib.sh"
 
@@ -22,46 +20,7 @@ LABEL_POSITIONS=(
     after-phase
 )
 
-assert_eq() {
-    local name="$1"
-    local expected="$2"
-    shift 2
-    local actual
-    actual="$(bump "$@")"
-    echo "[$name]"
-    echo "expected: $expected"
-    echo "actual:   $actual"
-    if [ "$actual" != "$expected" ]; then
-        exit 1
-    fi
-    echo
-}
-
-section_banner() {
-    echo "========================================"
-    echo "SECTION: $1"
-    echo "========================================"
-}
-
-set_label_position() {
-    local pos="$1"
-    if [[ "$(uname -s)" == "Darwin" ]]; then
-        sed -i '' "s/^position = .*/position = \"${pos}\"/" bump.toml
-    else
-        sed -i "s/^position = .*/position = \"${pos}\"/" bump.toml
-    fi
-}
-
-refresh_metadata() {
-    GIT_SHA="$(git rev-parse --short HEAD)"
-    TIMESTAMP="$(grep '^last = ' bump.toml | sed 's/^last = "\(.*\)"/\1/')"
-}
-
-setup_bumpfile() {
-    bump init >/dev/null
-    bump --prefix "$PREFIX" >/dev/null
-    refresh_metadata
-}
+enter_workspace --git
 
 format_phase() {
     local name="$1"
@@ -77,7 +36,7 @@ format_phase() {
     fi
 }
 
-# Mirror print.rs label slot assembly.
+# Mirror compose.rs label slot assembly.
 # Args: prefix base phase label_pos no_prefix no_phase with_label
 assemble() {
     local prefix="$1"
@@ -132,7 +91,7 @@ assemble() {
 }
 
 run_print_permutations() {
-    local section="$1"
+    local section_name="$1"
     local prefix="$2"
     local base="$3"
     local phase_name="$4"
@@ -153,24 +112,24 @@ run_print_permutations() {
     local with_label_no_prefix_no_phase
     with_label_no_prefix_no_phase="$(assemble "" "$base" "" "$label_pos" 1 1 1)"
 
-    assert_eq "${section}/default" "$default" p
-    assert_eq "${section}/only-prefix" "$prefix" p --only-prefix
-    assert_eq "${section}/only-base" "$base" p --only-base
-    assert_eq "${section}/only-base-with-label" "$base" p --only-base --with-label "$LABEL"
-    assert_eq "${section}/only-phase" "$phase" p --only-phase
-    assert_eq "${section}/no-prefix" "${base}${phase}" p --no-prefix
-    assert_eq "${section}/no-phase" "${prefix}${base}" p --no-phase
-    assert_eq "${section}/with-label" "$with_label" p --with-label "$LABEL"
-    assert_eq "${section}/with-label-no-phase" "$with_label_no_phase" p --with-label "$LABEL" --no-phase
-    assert_eq "${section}/with-label-no-prefix" "$with_label_no_prefix" p --with-label "$LABEL" --no-prefix
-    assert_eq "${section}/with-suffix" "${default}+${GIT_SHA}" p --with-suffix
-    assert_eq "${section}/with-label-with-suffix" "${with_label}+${GIT_SHA}" p --with-label "$LABEL" --with-suffix
-    assert_eq "${section}/with-timestamp" "${default}  ${TIMESTAMP}" p --with-timestamp
-    assert_eq "${section}/no-prefix-no-phase" "${base}" p --no-prefix --no-phase
-    assert_eq "${section}/no-prefix-no-phase-with-label" "$with_label_no_prefix_no_phase" p --no-prefix --no-phase --with-label "$LABEL"
-    assert_eq "${section}/no-prefix-no-phase-with-suffix-with-timestamp" "${base}+${GIT_SHA}  ${TIMESTAMP}" p --no-prefix --no-phase --with-suffix --with-timestamp
-    assert_eq "${section}/full" "${default}+${GIT_SHA}  ${TIMESTAMP}" p --full
-    assert_eq "${section}/full-with-label" "${with_label}+${GIT_SHA}  ${TIMESTAMP}" p --full --with-label "$LABEL"
+    assert_eq "${section_name}/default" "$default" p
+    assert_eq "${section_name}/only-prefix" "$prefix" p --only-prefix
+    assert_eq "${section_name}/only-base" "$base" p --only-base
+    assert_eq "${section_name}/only-base-with-label" "$base" p --only-base --with-label "$LABEL"
+    assert_eq "${section_name}/only-phase" "$phase" p --only-phase
+    assert_eq "${section_name}/no-prefix" "${base}${phase}" p --no-prefix
+    assert_eq "${section_name}/no-phase" "${prefix}${base}" p --no-phase
+    assert_eq "${section_name}/with-label" "$with_label" p --with-label "$LABEL"
+    assert_eq "${section_name}/with-label-no-phase" "$with_label_no_phase" p --with-label "$LABEL" --no-phase
+    assert_eq "${section_name}/with-label-no-prefix" "$with_label_no_prefix" p --with-label "$LABEL" --no-prefix
+    assert_eq "${section_name}/with-suffix" "${default}+${GIT_SHA}" p --with-suffix
+    assert_eq "${section_name}/with-label-with-suffix" "${with_label}+${GIT_SHA}" p --with-label "$LABEL" --with-suffix
+    assert_eq "${section_name}/with-timestamp" "${default}  ${TIMESTAMP}" p --with-timestamp
+    assert_eq "${section_name}/no-prefix-no-phase" "${base}" p --no-prefix --no-phase
+    assert_eq "${section_name}/no-prefix-no-phase-with-label" "$with_label_no_prefix_no_phase" p --no-prefix --no-phase --with-label "$LABEL"
+    assert_eq "${section_name}/no-prefix-no-phase-with-suffix-with-timestamp" "${base}+${GIT_SHA}  ${TIMESTAMP}" p --no-prefix --no-phase --with-suffix --with-timestamp
+    assert_eq "${section_name}/full" "${default}+${GIT_SHA}  ${TIMESTAMP}" p --full
+    assert_eq "${section_name}/full-with-label" "${with_label}+${GIT_SHA}  ${TIMESTAMP}" p --full --with-label "$LABEL"
 }
 
 run_label_slots() {
@@ -197,117 +156,93 @@ run_label_slots() {
     assert_eq "label/${label_pos}/full-with-label" "${with_label}+${GIT_SHA}  ${TIMESTAMP}" p --full --with-label "$LABEL"
 }
 
-init_calver() {
-    cat > bump.toml <<'EOF'
-prefix = ""
-
-[base]
-mode = "calver"
-delimiter = "."
-year = 2020
-month = 1
-day = 1
-
-[phase]
-separator = "-"
-name = ""
-delimiter = "."
-distance = 0
-
-[suffix]
-mode = "git_sha"
-separator = "+"
-
-[timestamp]
-format = "%Y-%m-%d %H:%M:%S %Z"
-last = "1970-01-01 00:00:00 UTC"
-
-[label]
-position = "after-base"
-EOF
-}
-
-today_calver_base() {
-    date -u +"%Y.%m.%d"
-}
-
 # ---------------------------------------------------------------------------
-# Setup
+section "Aliases (bare / show / p / print)"
 # ---------------------------------------------------------------------------
 
-GIT_SHA="$(git rev-parse --short HEAD)"
+setup_semver "$PREFIX"
+DEFAULT="$(bump)"
+assert_eq "show/alias/bare" "$DEFAULT"
+assert_eq "show/alias/show" "$DEFAULT" show
+assert_eq "show/alias/p" "$DEFAULT" p
+assert_eq "show/alias/print" "$DEFAULT" print
+
+# No trailing newline on show
+echo "[show/no-trailing-newline]"
+raw="$(bump p; printf '|')"
+if [[ "$raw" == *$'\n'* ]]; then
+    echo "show output unexpectedly contains a newline"
+    printf '%q\n' "$raw"
+    exit 1
+fi
+if [[ "$raw" != "${DEFAULT}|" ]]; then
+    echo "unexpected show payload: $raw"
+    exit 1
+fi
+echo "ok"
+echo
 
 # ---------------------------------------------------------------------------
-# Tier 1: Phase bumping (after-base only)
+section "Compose after phase bumps"
 # ---------------------------------------------------------------------------
 
-section_banner "Phase bumping"
+setup_semver "$PREFIX"
 
-setup_bumpfile
-
-bump --phase "$PHASE_NAMED" >/dev/null
+bump phase "$PHASE_NAMED" >/dev/null
 refresh_metadata
 run_print_permutations "phase/named" "$PREFIX" "0.1.0" "$PHASE_NAMED" "1" "$DEFAULT_LABEL_POSITION"
 
-bump --phase >/dev/null
+bump phase >/dev/null
 refresh_metadata
 run_print_permutations "phase/increment" "$PREFIX" "0.1.0" "$PHASE_NAMED" "2" "$DEFAULT_LABEL_POSITION"
 
-bump --phase beta >/dev/null
+bump phase beta >/dev/null
 refresh_metadata
 run_print_permutations "phase/switch-beta" "$PREFIX" "0.1.0" "beta" "1" "$DEFAULT_LABEL_POSITION"
 
 # ---------------------------------------------------------------------------
-# Tier 1: Formal bumping (after-base only)
+section "Compose after formal bumps"
 # ---------------------------------------------------------------------------
 
-section_banner "Formal bumping"
+setup_semver "$PREFIX"
 
-setup_bumpfile
-
-bump --patch >/dev/null
+bump patch >/dev/null
 refresh_metadata
 run_print_permutations "formal/patch" "$PREFIX" "0.1.1" "" "0" "$DEFAULT_LABEL_POSITION"
 
-bump --minor >/dev/null
+bump minor >/dev/null
 refresh_metadata
 run_print_permutations "formal/minor" "$PREFIX" "0.2.0" "" "0" "$DEFAULT_LABEL_POSITION"
 
-bump --major >/dev/null
+bump major >/dev/null
 refresh_metadata
 run_print_permutations "formal/major" "$PREFIX" "1.0.0" "" "0" "$DEFAULT_LABEL_POSITION"
 
 # ---------------------------------------------------------------------------
-# Tier 1: Calendar bumping (after-base only)
+section "Compose after calendar bumps"
 # ---------------------------------------------------------------------------
-
-section_banner "Calendar bumping"
 
 CALVER_TODAY="$(today_calver_base)"
 
-init_calver
-refresh_metadata
-
-bump --calendar >/dev/null
+setup_calver
+bump calendar >/dev/null
 refresh_metadata
 run_print_permutations "calendar/date" "" "$CALVER_TODAY" "" "0" "$DEFAULT_LABEL_POSITION"
 
-bump --calendar >/dev/null
+bump calendar >/dev/null
 refresh_metadata
 run_print_permutations "calendar/same-day" "" "$CALVER_TODAY" "" "1" "$DEFAULT_LABEL_POSITION"
 
 # ---------------------------------------------------------------------------
-# Tier 2: Label position slots (all six)
+section "Label positions"
 # ---------------------------------------------------------------------------
 
-section_banner "Label positions"
-
 for label_pos in "${LABEL_POSITIONS[@]}"; do
-    setup_bumpfile
+    setup_semver "$PREFIX"
     set_label_position "$label_pos"
-    bump --phase "$PHASE_NAMED" >/dev/null
+    bump phase "$PHASE_NAMED" >/dev/null
     refresh_metadata
     run_label_slots "$label_pos" "$PREFIX" "0.1.0" "$PHASE_NAMED" "1"
 done
 
-echo "All output tests passed."
+echo "All show tests passed."

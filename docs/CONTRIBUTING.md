@@ -42,25 +42,25 @@ Integration tests require a release build (see below).
 
 ### Running Tests
 
-Integration tests live in `tests/output.sh`. They exercise `bump print` output across
-SemVer phase and formal bumps, CalVer calendar bumps, and all `[label].position` values.
+Integration tests live under `tests/`. Run the full behavior suite with one
+entrypoint (covers show, mutate, meta, emit, init, tag, update, schema, and
+completion):
 
 ```bash
 cargo build --release
-./tests/output.sh
+./tests/run.sh
 ```
 
 When testing a cross-compiled binary, set `BUMP_BIN` to the built artifact path:
 
 ```bash
 cargo build --release --target x86_64-unknown-linux-musl
-BUMP_BIN=target/x86_64-unknown-linux-musl/release/bump ./tests/output.sh
+BUMP_BIN=target/x86_64-unknown-linux-musl/release/bump ./tests/run.sh
 ```
 
-The script reinitializes `bump.toml` in the repository root via `bump init`; any local
-changes to that file are overwritten.
+Suites run in isolated temp workspaces and do not modify a repo-root `bump.toml`.
 
-CI runs `./tests/output.sh` on native (non-cross-compiled) Linux and macOS jobs after
+CI runs `./tests/run.sh` on native (non-cross-compiled) Linux and macOS jobs after
 `cargo build --release --target <triple>`, with `BUMP_BIN` set to
 `target/<triple>/release/bump`.
 
@@ -69,18 +69,25 @@ CI runs `./tests/output.sh` on native (non-cross-compiled) Linux and macOS jobs 
 ```
 bump/
 ├── src/
-│   ├── main.rs         # Entry point and command routing
+│   ├── main.rs         # Thin 1:1 dispatch to cmd::*
 │   ├── cli.rs          # Command-line interface (clap)
-│   ├── bump.rs         # Core bump, init, tag, and gen logic
-│   ├── version.rs      # Version struct, TOML parsing, and bumping
-│   ├── print.rs        # Print subcommand and output assembly
-│   ├── lang.rs         # Code generation for multiple languages
-│   ├── update.rs       # File updating (Cargo.toml, pyproject.toml)
-│   └── templates/      # Embedded bump.toml and language templates
-├── tests/
-│   └── output.sh       # Shell integration tests for print output
+│   ├── cmd/            # CLI entrypoints (1:1 with commands)
+│   │   ├── show.rs
+│   │   ├── mutate.rs
+│   │   ├── meta.rs
+│   │   ├── emit.rs
+│   │   ├── init.rs
+│   │   ├── tag.rs
+│   │   └── update.rs
+│   ├── output/         # emit FORMAT backends
+│   │   └── format/     # c.rs, go.rs, … + raw/json/toml/yaml
+│   ├── version.rs      # Version struct and bumping rules
+│   ├── compose.rs      # Version string assembly (library)
+│   ├── bumpfile.rs     # Load/save bump.toml
+│   └── templates/      # Init bump.toml template only
+├── tests/              # Behavior suites + run.sh entrypoint
 ├── docs/               # Documentation
-├── install/            # Release install scripts (get_bump.sh, get_bump.ps1)
+├── install/            # Release install scripts
 ├── action.yml          # GitHub Action to install bump in workflows
 ├── .github/workflows/  # CI build, test, and publish
 └── Cargo.toml
@@ -90,7 +97,7 @@ bump/
 
 1. Create a feature branch
 1. Make your changes
-1. Run `./tests/output.sh` to ensure everything works
+1. Run `./tests/run.sh` to ensure everything works
 1. Submit a pull request
 
 ## Questions?
