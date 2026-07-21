@@ -241,7 +241,7 @@ assert_print_silent() {
     rm -f "$tmp"
 
     if [[ -n "$stderr" ]]; then
-        echo "expected no stderr on show, got: $stderr"
+        echo "expected no stderr on print, got: $stderr"
         exit 1
     fi
 

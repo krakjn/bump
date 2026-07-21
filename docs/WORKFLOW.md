@@ -1,6 +1,6 @@
 # Workflow Examples
 
-Practical patterns for day-to-day use. For bumpfile fields and show flags, see the
+Practical patterns for day-to-day use. For bumpfile fields and print flags, see the
 [Configuration Reference](CONFIGURATION.md).
 
 ## Single BUMPFILE Pipeline
@@ -14,7 +14,7 @@ bump minor
 bump update Cargo.toml
 
 git add bump.toml Cargo.toml
-git commit -m "chore(release): bump version to $(bump)"
+git commit -m "chore(release): bump version to $(bump p)"
 
 bump tag
 git push origin HEAD --tags
@@ -61,12 +61,12 @@ If the date is unchanged, calendar bump increments `phase.distance`.
 
 ## Ephemeral Labels
 
-Labels are injected at show time only — they are never persisted to the bumpfile.
+Labels are injected at print time only — they are never persisted to the bumpfile.
 
 ```bash
 # [label].position = "after-base" in bump.toml
-bump --with-label DEV        # e.g., v1.0.0DEV
-bump --full --with-label DEV # label + suffix + timestamp
+bump print --with-label DEV        # e.g., v1.0.0DEV
+bump print --full --with-label DEV # label + suffix + timestamp
 ```
 
 ## Multiple BUMPFILE Pipeline
@@ -91,15 +91,15 @@ git push origin HEAD --tags
 ## CI-Friendly Version Output
 
 ```bash
-bump --only-base
-bump --full
-bump --with-suffix
-bump --with-label BUILD_ID
+bump print --only-base
+bump print --full
+bump print --with-suffix
+bump print --with-label BUILD_ID
 bump emit raw --prefix "APP_"
 bump emit c --prefix "APP_" --case uppercase -o version.h
 ```
 
-All show commands emit without a trailing newline, so they are safe for shell
+All print commands emit without a trailing newline, so they are safe for shell
 substitution. Suffix output requires the job to run inside a git checkout.
 
 ### GitHub Actions
@@ -120,5 +120,5 @@ Pass a custom token if you need to avoid unauthenticated GitHub API rate limits:
 
 ## See Also
 
-- [Configuration Reference](CONFIGURATION.md) — bumpfile schema and show flags
+- [Configuration Reference](CONFIGURATION.md) — bumpfile schema and print flags
 - [Contributing Guide](CONTRIBUTING.md) — build, test, and contribute

@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-# Behavior: compose / show (bare bump, show, p, print) and label slots.
+# Behavior: print command (print, p, show) and label slots.
 
 source "$(dirname "$0")/lib.sh"
 
@@ -36,7 +36,7 @@ format_phase() {
     fi
 }
 
-# Mirror compose.rs label slot assembly.
+# Mirror print.rs label slot assembly.
 # Args: prefix base phase label_pos no_prefix no_phase with_label
 assemble() {
     local prefix="$1"
@@ -157,26 +157,25 @@ run_label_slots() {
 }
 
 # ---------------------------------------------------------------------------
-section "Aliases (bare / show / p / print)"
+section "Aliases (print / p / show)"
 # ---------------------------------------------------------------------------
 
 setup_semver "$PREFIX"
-DEFAULT="$(bump)"
-assert_eq "show/alias/bare" "$DEFAULT"
-assert_eq "show/alias/show" "$DEFAULT" show
-assert_eq "show/alias/p" "$DEFAULT" p
-assert_eq "show/alias/print" "$DEFAULT" print
+DEFAULT="$(bump print)"
+assert_eq "print/alias/print" "$DEFAULT" print
+assert_eq "print/alias/p" "$DEFAULT" p
+assert_eq "print/alias/show" "$DEFAULT" show
 
-# No trailing newline on show
-echo "[show/no-trailing-newline]"
+# No trailing newline on print
+echo "[print/no-trailing-newline]"
 raw="$(bump p; printf '|')"
 if [[ "$raw" == *$'\n'* ]]; then
-    echo "show output unexpectedly contains a newline"
+    echo "print output unexpectedly contains a newline"
     printf '%q\n' "$raw"
     exit 1
 fi
 if [[ "$raw" != "${DEFAULT}|" ]]; then
-    echo "unexpected show payload: $raw"
+    echo "unexpected print payload: $raw"
     exit 1
 fi
 echo "ok"
@@ -245,4 +244,4 @@ for label_pos in "${LABEL_POSITIONS[@]}"; do
     run_label_slots "$label_pos" "$PREFIX" "0.1.0" "$PHASE_NAMED" "1"
 done
 
-echo "All show tests passed."
+echo "All print tests passed."

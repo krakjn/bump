@@ -14,7 +14,7 @@ if [[ -n "${BUMP_BIN:-}" && "$BUMP_BIN" != /* ]]; then
 fi
 
 SUITES=(
-    show
+    print
     mutate
     meta
     emit

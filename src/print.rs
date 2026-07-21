@@ -1,8 +1,9 @@
-use crate::cmd::{BumpError, get_git_branch, get_git_commit_sha, is_git_repository};
+use crate::cmd::{BumpError, get_git_branch, get_git_commit_sha, is_git_repository, load_bumpfile};
 use crate::version::{LabelPosition, SuffixMode, Version, VersionMode};
+use clap::ArgMatches;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct ComposeOptions {
+pub struct PrintOptions {
     pub only_prefix: bool,
     pub only_phase: bool,
     pub only_base: bool,
@@ -14,7 +15,7 @@ pub struct ComposeOptions {
     pub full: bool,
 }
 
-impl ComposeOptions {
+impl PrintOptions {
     pub fn no_prefix() -> Self {
         Self {
             no_prefix: true,
@@ -28,6 +29,39 @@ impl ComposeOptions {
             ..Self::default()
         }
     }
+}
+
+fn options_from_matches(matches: &ArgMatches) -> Result<PrintOptions, BumpError> {
+    let opts = PrintOptions {
+        only_prefix: matches.get_flag("only-prefix"),
+        only_phase: matches.get_flag("only-phase"),
+        only_base: matches.get_flag("only-base"),
+        no_prefix: matches.get_flag("no-prefix"),
+        no_phase: matches.get_flag("no-phase"),
+        with_suffix: matches.get_flag("with-suffix"),
+        with_timestamp: matches.get_flag("with-timestamp"),
+        with_label: matches.get_one::<String>("with-label").cloned(),
+        full: matches.get_flag("full"),
+    };
+
+    let only = [opts.only_prefix, opts.only_phase, opts.only_base]
+        .into_iter()
+        .filter(|&b| b)
+        .count();
+    if only > 1 {
+        return Err(BumpError::ParseError(
+            "Only one type of --only* allowed".to_string(),
+        ));
+    }
+    Ok(opts)
+}
+
+pub fn print(matches: &ArgMatches) -> Result<(), BumpError> {
+    let bumpfile = load_bumpfile(matches)?;
+    let version = bumpfile.version()?;
+    let opts = options_from_matches(matches)?;
+    print!("{}", to_string(&version, &opts)?);
+    Ok(())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -82,7 +116,7 @@ fn push_if_active(out: &mut String, field: &Field) {
 }
 
 impl Components {
-    fn from(version: &Version, opts: &ComposeOptions) -> Result<Self, BumpError> {
+    fn from(version: &Version, opts: &PrintOptions) -> Result<Self, BumpError> {
         let suffix_value = if is_git_repository() {
             suffix(version)?
         } else {
@@ -120,7 +154,7 @@ impl Components {
     fn apply_opts(
         &mut self,
         version: &Version,
-        opts: &ComposeOptions,
+        opts: &PrintOptions,
     ) -> Result<Option<String>, BumpError> {
         if opts.full {
             self.prefix.active = true;
@@ -190,7 +224,7 @@ impl Components {
     }
 }
 
-pub fn to_string(version: &Version, opts: &ComposeOptions) -> Result<String, BumpError> {
+pub fn to_string(version: &Version, opts: &PrintOptions) -> Result<String, BumpError> {
     let mut components = Components::from(version, opts)?;
     if let Some(segment) = components.apply_opts(version, opts)? {
         return Ok(segment);

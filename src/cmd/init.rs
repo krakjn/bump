@@ -1,5 +1,5 @@
-use crate::cmd::{BumpError, resolve_path};
 use crate::bumpfile::BumpFile;
+use crate::cmd::{BumpError, resolve_path};
 use clap::ArgMatches;
 
 pub fn init(matches: &ArgMatches) -> Result<(), BumpError> {

@@ -78,6 +78,7 @@ fn capitalize(word: &str) -> String {
 }
 
 /// Substitute language-template placeholders.
+#[rustfmt::skip]
 pub fn substitute(tmpl: &str, fields: &Fields) -> String {
     tmpl.replace("{emit_prefix}", &fields.emit_prefix)
         .replace("{case_prefix}", &fields.case_prefix)

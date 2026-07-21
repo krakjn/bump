@@ -16,57 +16,57 @@ section "Malformed / legacy bumpfiles"
 assert_fails \
     "schema/v6-semver" \
     "missing field \`prefix\`" \
-    "$MALFORMED/v6-semver.toml"
+    p "$MALFORMED/v6-semver.toml"
 
 assert_fails \
     "schema/v6-calver" \
     "missing field \`prefix\`" \
-    "$MALFORMED/v6-calver.toml"
+    p "$MALFORMED/v6-calver.toml"
 
 assert_fails \
     "schema/invalid-toml" \
     "Failed to parse TOML document" \
-    "$MALFORMED/invalid-toml.toml"
+    p "$MALFORMED/invalid-toml.toml"
 
 assert_fails \
     "schema/missing-base" \
     "missing field \`base\`" \
-    "$MALFORMED/missing-base.toml"
+    p "$MALFORMED/missing-base.toml"
 
 assert_fails \
     "schema/base-not-table" \
     "unknown variant \`mode\`" \
-    "$MALFORMED/base-not-table.toml"
+    p "$MALFORMED/base-not-table.toml"
 
 assert_fails \
     "schema/missing-file" \
     "Configuration file not found" \
-    "$MALFORMED/does-not-exist.toml"
+    p "$MALFORMED/does-not-exist.toml"
 
 assert_fails \
     "schema/missing-prefix" \
     "missing field \`prefix\`" \
-    "$MALFORMED/missing-prefix.toml"
+    p "$MALFORMED/missing-prefix.toml"
 
 assert_fails \
     "schema/missing-major" \
     "missing field \`major\`" \
-    "$MALFORMED/missing-major.toml"
+    p "$MALFORMED/missing-major.toml"
 
 assert_fails \
     "schema/missing-phase" \
     "missing field \`phase\`" \
-    "$MALFORMED/missing-phase.toml"
+    p "$MALFORMED/missing-phase.toml"
 
 assert_fails \
     "schema/bad-label-position" \
     "unknown variant \`middle\`" \
-    "$MALFORMED/bad-label-position.toml"
+    p "$MALFORMED/bad-label-position.toml"
 
 assert_prints \
     "schema/semver-with-calver-keys" \
     "v2020.1.1" \
-    "$MALFORMED/semver-with-calver-keys.toml"
+    p "$MALFORMED/semver-with-calver-keys.toml"
 
 assert_warns_on_bump \
     "schema/semver-with-calver-keys-on-bump" \
@@ -76,7 +76,7 @@ assert_warns_on_bump \
 assert_prints \
     "schema/valid" \
     "v0.1.0" \
-    "$MALFORMED/valid.toml"
+    p "$MALFORMED/valid.toml"
 
 # ---------------------------------------------------------------------------
 section "Mode key rewrite"
@@ -85,17 +85,17 @@ section "Mode key rewrite"
 assert_print_silent \
     "schema/semver-mode-calver-keys/print" \
     "v2020.1.1" \
-    "$MODE_SWAP/semver-mode-calver-keys.toml"
+    p "$MODE_SWAP/semver-mode-calver-keys.toml"
 
 assert_print_silent \
     "schema/calver-mode-semver-keys/print" \
     "v2020.01.01" \
-    "$MODE_SWAP/calver-mode-semver-keys.toml"
+    p "$MODE_SWAP/calver-mode-semver-keys.toml"
 
 assert_print_silent \
     "schema/calver-mode-year-only/print" \
     "2020" \
-    "$MODE_SWAP/calver-mode-year-only.toml"
+    p "$MODE_SWAP/calver-mode-year-only.toml"
 
 assert_bump_rewrites_keys \
     "schema/semver-mode-calver-keys/bump-patch" \

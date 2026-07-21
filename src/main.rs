@@ -5,8 +5,8 @@ use std::process::ExitCode;
 mod bumpfile;
 mod cli;
 mod cmd;
-mod compose;
 mod output;
+mod print;
 mod version;
 
 fn egress(result: Result<(), BumpError>) -> ExitCode {
@@ -20,8 +20,7 @@ fn egress(result: Result<(), BumpError>) -> ExitCode {
 fn main() -> ExitCode {
     let matches = cli::cli().get_matches();
     match matches.subcommand() {
-        None => egress(cmd::show(&matches)),
-        Some(("show", sub_matches)) => egress(cmd::show(sub_matches)),
+        Some(("print", sub_matches)) => egress(print::print(sub_matches)),
         Some(("major", sub_matches)) => egress(cmd::mutate(sub_matches, BumpType::Major)),
         Some(("minor", sub_matches)) => egress(cmd::mutate(sub_matches, BumpType::Minor)),
         Some(("patch", sub_matches)) => egress(cmd::mutate(sub_matches, BumpType::Patch)),
@@ -47,5 +46,9 @@ fn main() -> ExitCode {
         Some((name, _)) => egress(Err(BumpError::LogicError(format!(
             "Unknown command: {name}"
         )))),
+        None => {
+            let _ = cli::cli().print_help();
+            ExitCode::SUCCESS
+        }
     }
 }

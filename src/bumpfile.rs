@@ -75,14 +75,14 @@ fn write_base(doc: &mut DocumentMut, version: &Version, path: &Path) -> Result<(
             base.remove("major");
             base.remove("minor");
             base.remove("patch");
-            if ! base.contains_key("year") {
+            if !base.contains_key("year") {
                 base.insert("year", value(i64::from(version.base.major)));
             } else {
                 set(base, "year", i64::from(version.base.major), "base", path)?;
             }
             // optional value, if None remove key to allow more flexible versioning
             if let Some(minor) = version.base.minor {
-                if ! base.contains_key("month") {
+                if !base.contains_key("month") {
                     base.insert("month", value(i64::from(minor)));
                 } else {
                     set(base, "month", i64::from(minor), "base", path)?;
@@ -91,7 +91,7 @@ fn write_base(doc: &mut DocumentMut, version: &Version, path: &Path) -> Result<(
                 base.remove("month");
             }
             if let Some(patch) = version.base.patch {
-                if ! base.contains_key("day") {
+                if !base.contains_key("day") {
                     base.insert("day", value(i64::from(patch)));
                 } else {
                     set(base, "day", i64::from(patch), "base", path)?;
@@ -104,13 +104,13 @@ fn write_base(doc: &mut DocumentMut, version: &Version, path: &Path) -> Result<(
             base.remove("year");
             base.remove("month");
             base.remove("day");
-            if ! base.contains_key("major") {
+            if !base.contains_key("major") {
                 base.insert("major", value(i64::from(version.base.major)));
             } else {
                 set(base, "major", i64::from(version.base.major), "base", path)?;
             }
             if let Some(minor) = version.base.minor {
-                if ! base.contains_key("minor") {
+                if !base.contains_key("minor") {
                     base.insert("minor", value(i64::from(minor)));
                 } else {
                     set(base, "minor", i64::from(minor), "base", path)?;
@@ -119,7 +119,7 @@ fn write_base(doc: &mut DocumentMut, version: &Version, path: &Path) -> Result<(
                 base.remove("minor");
             }
             if let Some(patch) = version.base.patch {
-                if ! base.contains_key("patch") {
+                if !base.contains_key("patch") {
                     base.insert("patch", value(i64::from(patch)));
                 } else {
                     set(base, "patch", i64::from(patch), "base", path)?;

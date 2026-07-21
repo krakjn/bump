@@ -50,8 +50,6 @@ To use CalVer, set `mode = "calver"` under `[base]` in your bumpfile.
 
 | v7 | v8 |
 |----|----|
-| `bump` with no args → error | `bump` → **show** composed version |
-| `bump print …` / `bump p …` | `bump …` / `bump show …` / `bump p …` |
 | `bump --major` / `--minor` / `--patch` | `bump major` / `minor` / `patch` |
 | `bump --phase` / `bump --phase NAME` | `bump phase` / `bump phase NAME` |
 | `bump --calendar` | `bump calendar` |
@@ -63,29 +61,29 @@ To use CalVer, set `mode = "calver"` under `[base]` in your bumpfile.
 
 ## Commands
 
-### Show (default)
+### Print
 
-> All show variants write output **without a trailing newline**.
+> All print variants write output **without a trailing newline**.
+> Bare `bump` (no subcommand) prints help.
 
 ```bash
-# Default show ([prefix][base][phase])
-bump [BUMPFILE]
-bump show [BUMPFILE]
+# Default print ([prefix][base][phase])
+bump print [BUMPFILE]
 bump p [BUMPFILE]              # alias
 
-# Show variants
-bump --only-prefix [BUMPFILE]
-bump --only-phase [BUMPFILE]
-bump --only-base [BUMPFILE]
-bump --no-prefix [BUMPFILE]
-bump --no-phase [BUMPFILE]
-bump --with-suffix [BUMPFILE]
-bump --with-timestamp [BUMPFILE]
-bump --with-label DEV [BUMPFILE]
-bump --full [BUMPFILE]
+# Print variants
+bump print --only-prefix [BUMPFILE]
+bump print --only-phase [BUMPFILE]
+bump print --only-base [BUMPFILE]
+bump print --no-prefix [BUMPFILE]
+bump print --no-phase [BUMPFILE]
+bump print --with-suffix [BUMPFILE]
+bump print --with-timestamp [BUMPFILE]
+bump print --with-label DEV [BUMPFILE]
+bump print --full [BUMPFILE]
 
 # Stackable (e.g. omit prefix and include suffix)
-bump --no-prefix --with-suffix [BUMPFILE]
+bump print --no-prefix --with-suffix [BUMPFILE]
 ```
 
 Suffix output (`--with-suffix`, `--full`) requires a git repository.
@@ -197,13 +195,13 @@ If your token differs from the default `GITHUB_TOKEN`:
 
 you can inject bump _everywhere_
 ```bash
-sed -i "s|REPLACE_ME|$(bump --no-prefix)|g" somefile
+sed -i "s|REPLACE_ME|$(bump print --no-prefix)|g" somefile
 ```
 
 ```cmake
 # CMakeLists.txt
 execute_process(
-  COMMAND bump --only-base
+  COMMAND bump print --only-base
   WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/
   OUTPUT_VARIABLE VERSION)
 project("your-app" VERSION ${VERSION} LANGUAGES CXX C)
@@ -245,7 +243,7 @@ bump completion powershell | Out-String | Invoke-Expression
 Add-Content $PROFILE 'bump completion powershell | Out-String | Invoke-Expression'
 ```
 
-- **[Configuration Reference](docs/CONFIGURATION.md)** — bumpfile schema, show flags, and mode behavior
+- **[Configuration Reference](docs/CONFIGURATION.md)** — bumpfile schema, print flags, and mode behavior
 - **[Workflow Guide](docs/WORKFLOW.md)** — release pipelines, phases, labels, and CI examples
 - **[Contributing Guide](docs/CONTRIBUTING.md)** — build from source, run integration tests, and project layout
 

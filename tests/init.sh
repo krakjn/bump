@@ -22,7 +22,7 @@ if [[ ! -f bump.toml ]]; then
     echo "bump.toml was not created"
     exit 1
 fi
-assert_eq "init/default/show" "v0.1.0" p
+assert_eq "init/default/print" "v0.1.0" p
 echo "ok"
 echo
 
@@ -33,7 +33,7 @@ if [[ ! -f nested/dir/bump.toml ]]; then
     echo "out: $out"
     exit 1
 fi
-assert_eq "init/nested/show" "v0.1.0" p nested/dir/bump.toml
+assert_eq "init/nested/print" "v0.1.0" p nested/dir/bump.toml
 echo "ok"
 echo
 

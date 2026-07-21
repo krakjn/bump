@@ -199,8 +199,7 @@ impl Version {
             }
             BumpType::Calendar => {
                 self.right_mode(VersionMode::Calver)?;
-                let is_same_date = 
-                    self.base.major == now.year().cast_unsigned()
+                let is_same_date = self.base.major == now.year().cast_unsigned()
                     && self.base.minor.is_none_or(|m| m == now.month())
                     && self.base.patch.is_none_or(|d| d == now.day());
 

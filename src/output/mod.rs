@@ -3,7 +3,7 @@ mod format;
 pub use format::{Case, render};
 
 use crate::cmd::BumpError;
-use crate::compose::{self, ComposeOptions};
+use crate::print::{self, PrintOptions};
 use crate::version::{Version, VersionMode};
 use std::fs;
 use std::path::Path;
@@ -83,7 +83,7 @@ impl Fields {
             case_phase_distance: case.apply("VERSION_PHASE_DISTANCE"),
             case_string: case.apply("VERSION_STRING"),
             case_timestamp: case.apply("VERSION_TIMESTAMP"),
-            version_string: compose::to_string(version, &ComposeOptions::default())?,
+            version_string: print::to_string(version, &PrintOptions::default())?,
             version_timestamp: version.timestamp.last.clone(),
             version_prefix: version.prefix.clone(),
             version_major: version.base.major,

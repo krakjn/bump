@@ -43,7 +43,7 @@ Integration tests require a release build (see below).
 ### Running Tests
 
 Integration tests live under `tests/`. Run the full behavior suite with one
-entrypoint (covers show, mutate, meta, emit, init, tag, update, schema, and
+entrypoint (covers print, mutate, meta, emit, init, tag, update, schema, and
 completion):
 
 ```bash
@@ -69,10 +69,10 @@ CI runs `./tests/run.sh` on native (non-cross-compiled) Linux and macOS jobs aft
 ```
 bump/
 ├── src/
-│   ├── main.rs         # Thin 1:1 dispatch to cmd::*
+│   ├── main.rs         # Thin 1:1 dispatch to cmd::* / print
 │   ├── cli.rs          # Command-line interface (clap)
+│   ├── print.rs        # print command + version string assembly
 │   ├── cmd/            # CLI entrypoints (1:1 with commands)
-│   │   ├── show.rs
 │   │   ├── mutate.rs
 │   │   ├── meta.rs
 │   │   ├── emit.rs
@@ -82,7 +82,6 @@ bump/
 │   ├── output/         # emit FORMAT backends
 │   │   └── format/     # c.rs, go.rs, … + raw/json/toml/yaml
 │   ├── version.rs      # Version struct and bumping rules
-│   ├── compose.rs      # Version string assembly (library)
 │   ├── bumpfile.rs     # Load/save bump.toml
 │   └── templates/      # Init bump.toml template only
 ├── tests/              # Behavior suites + run.sh entrypoint

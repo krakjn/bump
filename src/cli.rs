@@ -1,5 +1,5 @@
-use clap::builder::styling::{AnsiColor, Styles};
 use clap::builder::StyledStr;
+use clap::builder::styling::{AnsiColor, Styles};
 use clap::{Arg, Command, value_parser};
 use clap_complete::aot::Shell;
 use std::fmt::Write;
@@ -32,43 +32,43 @@ fn bumpfile_arg() -> Arg {
         .help("Path to the configuration file")
 }
 
-fn show_args() -> Vec<Arg> {
+fn print_args() -> Vec<Arg> {
     vec![
         Arg::new("only-prefix")
             .long("only-prefix")
             .action(clap::ArgAction::SetTrue)
-            .group("show-exclusive")
-            .help("Show [prefix]"),
+            .group("print-exclusive")
+            .help("Print [prefix]"),
         Arg::new("only-phase")
             .long("only-phase")
             .action(clap::ArgAction::SetTrue)
-            .group("show-exclusive")
-            .help("Show [phase]"),
+            .group("print-exclusive")
+            .help("Print [phase]"),
         Arg::new("only-base")
             .long("only-base")
             .action(clap::ArgAction::SetTrue)
-            .group("show-exclusive")
-            .help("Show [base]"),
+            .group("print-exclusive")
+            .help("Print [base]"),
         Arg::new("no-prefix")
             .long("no-prefix")
             .action(clap::ArgAction::SetTrue)
-            .help("Show [base][phase]"),
+            .help("Print [base][phase]"),
         Arg::new("no-phase")
             .long("no-phase")
             .action(clap::ArgAction::SetTrue)
-            .help("Show [prefix][base]"),
+            .help("Print [prefix][base]"),
         Arg::new("with-suffix")
             .long("with-suffix")
             .action(clap::ArgAction::SetTrue)
-            .help("Show [prefix][base][phase][suffix]"),
+            .help("Print [prefix][base][phase][suffix]"),
         Arg::new("with-timestamp")
             .long("with-timestamp")
             .action(clap::ArgAction::SetTrue)
-            .help("Show [prefix][base][phase][timestamp]"),
+            .help("Print [prefix][base][phase][timestamp]"),
         Arg::new("full")
             .long("full")
             .action(clap::ArgAction::SetTrue)
-            .help("Show full output; overrides all show flags except --with-label"),
+            .help("Print full output; overrides all print flags except --with-label"),
         Arg::new("with-label")
             .long("with-label")
             .value_name("LABEL")
@@ -81,21 +81,22 @@ fn show_args() -> Vec<Arg> {
 
 #[allow(clippy::too_many_lines)]
 pub fn cli() -> Command {
-    let show_flags = show_args();
+    let print_flags = print_args();
 
     Command::new("bump")
         .styles(HELP_STYLES)
         .version(env!("CARGO_PKG_VERSION"))
         .about("Automatic un-opinionated version bumping")
         .override_usage(root_usage())
-        .args(show_flags.clone())
+        .arg_required_else_help(true)
         .arg(bumpfile_arg())
         .subcommand(
-            Command::new("show")
-                .about("Show composed version from BUMPFILE without newline")
-                .alias("p")
-                .alias("print")
-                .args(show_flags)
+            Command::new("print")
+                .about("Print composed version from BUMPFILE without newline")
+                .visible_alias("p")
+                .alias("show")
+                .alias("s")
+                .args(print_flags)
                 .arg(bumpfile_arg()),
         )
         .subcommand(
