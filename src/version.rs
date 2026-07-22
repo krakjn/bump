@@ -164,15 +164,15 @@ impl Version {
             BumpType::Minor => {
                 self.right_mode(VersionMode::Semver)?;
                 if self.base.minor.is_none() {
-                    return Err(BumpError::LogicError(format!(
-                        "Operation only valid for version.minor is set"
-                    )));
+                    return Err(BumpError::LogicError(
+                        "Operation only valid for version.minor is set".to_string(),
+                    ));
                 }
                 self.base.minor = self.base.minor.map(|m| m + 1);
                 if self.base.patch.is_none() {
-                    return Err(BumpError::LogicError(format!(
-                        "Operation only valid for version.patch is set"
-                    )));
+                    return Err(BumpError::LogicError(
+                        "Operation only valid for version.patch is set".to_string(),
+                    ));
                 }
                 self.base.patch = self.base.patch.map(|_| 0);
                 self.clear_phase();
@@ -180,9 +180,9 @@ impl Version {
             BumpType::Patch => {
                 self.right_mode(VersionMode::Semver)?;
                 if self.base.patch.is_none() {
-                    return Err(BumpError::LogicError(format!(
-                        "Operation only valid for version.patch is set"
-                    )));
+                    return Err(BumpError::LogicError(
+                        "Operation only valid for version.patch is set".to_string(),
+                    ));
                 }
                 self.base.patch = self.base.patch.map(|p| p + 1);
                 self.clear_phase();
@@ -199,14 +199,15 @@ impl Version {
             }
             BumpType::Calendar => {
                 self.right_mode(VersionMode::Calver)?;
-                let is_same_date = self.base.major == now.year().cast_unsigned()
+                let year = now.year() as u32;
+                let is_same_date = self.base.major == year
                     && self.base.minor.is_none_or(|m| m == now.month())
                     && self.base.patch.is_none_or(|d| d == now.day());
 
                 if is_same_date {
                     self.phase.distance += 1;
                 } else {
-                    self.base.major = now.year().cast_unsigned();
+                    self.base.major = year;
                     self.base.minor = self.base.minor.map(|_| now.month());
                     self.base.patch = self.base.patch.map(|_| now.day());
                 }

@@ -40,7 +40,8 @@ impl Format {
 
     const fn file_description(self) -> Option<&'static str> {
         match self {
-            Self::C => Some("C header file"),
+            // only called by write
+            Self::CHeader => Some("C header file"),
             Self::Go => Some("Go source file"),
             Self::Java => Some("Java source file"),
             Self::CSharp => Some("C# source file"),
