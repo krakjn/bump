@@ -299,3 +299,63 @@ fn suffix(version: &Version) -> Result<String, BumpError> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::version::{
+        Base, Label, LabelPosition, Phase, Suffix, SuffixMode, Timestamp, Version, VersionMode,
+    };
+
+    fn test_version() -> Version {
+        Version {
+            prefix: "v-".to_string(),
+            base: Base {
+                mode: VersionMode::Semver,
+                delimiter: ".".to_string(),
+                major: 0,
+                minor: Some(1),
+                patch: Some(0),
+            },
+            phase: Phase {
+                separator: "-".to_string(),
+                name: String::new(),
+                delimiter: ".".to_string(),
+                distance: 0,
+            },
+            suffix: Suffix {
+                mode: SuffixMode::GitSha,
+                separator: "+".to_string(),
+            },
+            timestamp: Timestamp {
+                format: "%Y-%m-%d %H:%M:%S %Z".to_string(),
+                last: "2026-01-01 00:00:00 UTC".to_string(),
+            },
+            label: Label {
+                position: LabelPosition::AfterBase,
+            },
+        }
+    }
+
+    #[test]
+    fn only_base_returns_base_without_newline() {
+        let v = test_version();
+        let out = to_string(
+            &v,
+            &PrintOptions {
+                only_base: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(out, "0.1.0");
+    }
+
+    #[test]
+    fn conflicting_only_flags_error() {
+        let only = [true, true, false].into_iter().filter(|&b| b).count();
+        assert!(only > 1);
+        let err = BumpError::ParseError("Only one type of --only* allowed".to_string());
+        assert!(err.to_string().contains("Only one type of --only*"));
+    }
+}

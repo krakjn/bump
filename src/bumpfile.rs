@@ -1,4 +1,5 @@
 use crate::cmd::{BumpError, ensure_directory_exists};
+use crate::print::{self, PrintOptions};
 use crate::version::{Version, VersionMode};
 use std::{
     fmt, fs, io,
@@ -63,6 +64,42 @@ fn present_keys<'a>(base: &Table, keys: &'a [&str]) -> Vec<&'a str> {
         .collect()
 }
 
+fn set_optional_u32(
+    table: &mut Table,
+    key: &str,
+    val: Option<u32>,
+    path: &Path,
+    section: &str,
+) -> Result<(), BumpError> {
+    if let Some(v) = val {
+        let v = i64::from(v);
+        if !table.contains_key(key) {
+            table.insert(key, value(v));
+        } else {
+            set(table, key, v, section, path)?;
+        }
+    } else {
+        table.remove(key);
+    }
+    Ok(())
+}
+
+fn set_required_u32(
+    table: &mut Table,
+    key: &str,
+    val: u32,
+    path: &Path,
+    section: &str,
+) -> Result<(), BumpError> {
+    let v = i64::from(val);
+    if !table.contains_key(key) {
+        table.insert(key, value(v));
+    } else {
+        set(table, key, v, section, path)?;
+    }
+    Ok(())
+}
+
 fn write_base(doc: &mut DocumentMut, version: &Version, path: &Path) -> Result<(), BumpError> {
     let base = table_mut(doc, "base", path)?;
 
@@ -71,62 +108,20 @@ fn write_base(doc: &mut DocumentMut, version: &Version, path: &Path) -> Result<(
 
     match version.base.mode {
         VersionMode::Calver => {
-            // first remove old keys
             base.remove("major");
             base.remove("minor");
             base.remove("patch");
-            if !base.contains_key("year") {
-                base.insert("year", value(i64::from(version.base.major)));
-            } else {
-                set(base, "year", i64::from(version.base.major), "base", path)?;
-            }
-            // optional value, if None remove key to allow more flexible versioning
-            if let Some(minor) = version.base.minor {
-                if !base.contains_key("month") {
-                    base.insert("month", value(i64::from(minor)));
-                } else {
-                    set(base, "month", i64::from(minor), "base", path)?;
-                }
-            } else {
-                base.remove("month");
-            }
-            if let Some(patch) = version.base.patch {
-                if !base.contains_key("day") {
-                    base.insert("day", value(i64::from(patch)));
-                } else {
-                    set(base, "day", i64::from(patch), "base", path)?;
-                }
-            } else {
-                base.remove("day");
-            }
+            set_required_u32(base, "year", version.base.major, path, "base")?;
+            set_optional_u32(base, "month", version.base.minor, path, "base")?;
+            set_optional_u32(base, "day", version.base.patch, path, "base")?;
         }
         VersionMode::Semver => {
             base.remove("year");
             base.remove("month");
             base.remove("day");
-            if !base.contains_key("major") {
-                base.insert("major", value(i64::from(version.base.major)));
-            } else {
-                set(base, "major", i64::from(version.base.major), "base", path)?;
-            }
-            if let Some(minor) = version.base.minor {
-                if !base.contains_key("minor") {
-                    base.insert("minor", value(i64::from(minor)));
-                } else {
-                    set(base, "minor", i64::from(minor), "base", path)?;
-                }
-            } else {
-                base.remove("minor");
-            }
-            if let Some(patch) = version.base.patch {
-                if !base.contains_key("patch") {
-                    base.insert("patch", value(i64::from(patch)));
-                } else {
-                    set(base, "patch", i64::from(patch), "base", path)?;
-                }
-            } else {
-                base.remove("patch");
-            }
+            set_required_u32(base, "major", version.base.major, path, "base")?;
+            set_optional_u32(base, "minor", version.base.minor, path, "base")?;
+            set_optional_u32(base, "patch", version.base.patch, path, "base")?;
         }
     }
     Ok(())
@@ -197,6 +192,14 @@ fn write_version_into_doc(
     Ok(())
 }
 
+pub fn report(verb: &str, path: &Path, version: &Version) -> Result<String, BumpError> {
+    Ok(format!(
+        "{verb} {} to {}",
+        path.display(),
+        print::to_string(version, &PrintOptions::with_timestamp())?
+    ))
+}
+
 impl BumpFile {
     pub fn load(path: impl AsRef<Path>) -> Result<Self, BumpError> {
         let path = path.as_ref();
@@ -221,9 +224,16 @@ impl BumpFile {
         })
     }
 
-    pub fn create(path: impl AsRef<Path>) -> Result<Self, BumpError> {
+    pub fn create(path: impl AsRef<Path>, force: bool) -> Result<Self, BumpError> {
         let path = path.as_ref();
         ensure_directory_exists(path)?;
+
+        if path.exists() && !force {
+            return Err(BumpError::LogicError(format!(
+                "bumpfile already exists at '{}'; pass --force to overwrite",
+                path.display()
+            )));
+        }
 
         let template = include_str!("templates/bump.toml");
         let template_version: Version = {

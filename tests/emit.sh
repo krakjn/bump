@@ -90,9 +90,7 @@ ${root}:
 EOF
 }
 
-# ---------------------------------------------------------------------------
 section "Markup nested layouts (exact)"
-# ---------------------------------------------------------------------------
 
 setup_semver "$PREFIX"
 
@@ -126,9 +124,7 @@ assert_eq \
     "$(expected_yaml "version")" \
     emit yaml
 
-# ---------------------------------------------------------------------------
 section "Markup ignores --case (always snake)"
-# ---------------------------------------------------------------------------
 
 for case in "${CASES[@]}"; do
     assert_eq \
@@ -167,9 +163,7 @@ assert_lacks \
     "versionString" \
     emit yaml --prefix "mylib_" --case camel
 
-# ---------------------------------------------------------------------------
 section "Language/raw: format × case × prefix"
-# ---------------------------------------------------------------------------
 
 setup_semver "$PREFIX"
 
@@ -300,9 +294,31 @@ assert_contains \
     "VersionString = \"${PREFIX}0.1.0\"" \
     emit python --case pascal
 
-# ---------------------------------------------------------------------------
+section "Emit calver"
+
+setup_calver
+
+assert_contains \
+    "emit/calver/json/string-key" \
+    '"string": "2020.01.01"' \
+    emit json
+
+assert_lacks \
+    "emit/calver/c/stdout/no-include-guard" \
+    "#ifndef BUMP_VERSION_H" \
+    emit c
+
+echo "[emit/calver/c-header-file]"
+bump emit c -o calver.h 2>/dev/null
+if ! grep -Fq '#ifndef BUMP_VERSION_H' calver.h; then
+    echo "expected include guard in calver.h"
+    cat calver.h
+    exit 1
+fi
+echo "ok"
+echo
+
 section "emit -o writes"
-# ---------------------------------------------------------------------------
 
 setup_semver "$PREFIX"
 
@@ -350,21 +366,21 @@ echo "ok"
 echo
 
 echo "[emit/output/no-stdout]"
-stdout="$(bump emit json -o out.json)"
-if [[ -n "$stdout" && "$stdout" != *"written to"* ]]; then
-    # write() prints a status line; body must not be dumped
-    if [[ "$stdout" == *"\"string\""* ]]; then
-        echo "emit -o unexpectedly printed JSON body"
-        echo "$stdout"
-        exit 1
-    fi
+stdout="$(bump emit json -o out.json 2>/dev/null)"
+stderr="$(bump emit json -o out.json 2>&1 >/dev/null)"
+if [[ -n "$stdout" ]]; then
+    echo "emit -o unexpectedly printed to stdout: $stdout"
+    exit 1
+fi
+if [[ "$stderr" != *"written to"* ]]; then
+    echo "expected status on stderr"
+    echo "stderr: $stderr"
+    exit 1
 fi
 echo "ok"
 echo
 
-# ---------------------------------------------------------------------------
 section "Invalid case / format rejected"
-# ---------------------------------------------------------------------------
 
 assert_fails \
     "emit/invalid-case-kebab" \

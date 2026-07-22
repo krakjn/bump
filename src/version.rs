@@ -25,10 +25,11 @@ impl fmt::Display for VersionMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "snake_case")]
 pub enum SuffixMode {
     #[serde(rename = "git_sha")]
+    #[value(name = "git_sha")]
     GitSha,
     Branch,
 }
@@ -38,16 +39,6 @@ impl SuffixMode {
         match self {
             Self::GitSha => "git_sha",
             Self::Branch => "branch",
-        }
-    }
-
-    pub fn parse(value: &str) -> Result<Self, BumpError> {
-        match value {
-            "git_sha" => Ok(Self::GitSha),
-            "branch" => Ok(Self::Branch),
-            _ => Err(BumpError::LogicError(format!(
-                "Invalid suffix mode: '{value}'. Expected 'git_sha' or 'branch'."
-            ))),
         }
     }
 }
@@ -140,7 +131,7 @@ impl Version {
             Ok(())
         } else {
             Err(BumpError::LogicError(format!(
-                "Operation only valid for version.type = '{}'",
+                "Operation only valid for base.mode = '{}'",
                 expected_mode.as_str()
             )))
         }
@@ -187,15 +178,16 @@ impl Version {
                 self.base.patch = self.base.patch.map(|p| p + 1);
                 self.clear_phase();
             }
-            BumpType::Phase(cli_phase_name) => {
-                if cli_phase_name == &self.phase.name {
+            BumpType::PhaseSet(name) => {
+                if *name == self.phase.name {
                     self.phase.distance += 1;
-                } else if *cli_phase_name != "__increment__" {
-                    self.phase.name.clone_from(cli_phase_name);
-                    self.phase.distance = 1;
                 } else {
-                    self.phase.distance += 1;
+                    self.phase.name.clone_from(name);
+                    self.phase.distance = 1;
                 }
+            }
+            BumpType::PhaseIncrement => {
+                self.phase.distance += 1;
             }
             BumpType::Calendar => {
                 self.right_mode(VersionMode::Calver)?;
@@ -215,5 +207,67 @@ impl Version {
         }
         self.timestamp.last = now.format(&self.timestamp.format).to_string();
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cmd::BumpType;
+
+    fn test_version() -> Version {
+        Version {
+            prefix: "v-".to_string(),
+            base: Base {
+                mode: VersionMode::Semver,
+                delimiter: ".".to_string(),
+                major: 0,
+                minor: Some(1),
+                patch: Some(0),
+            },
+            phase: Phase {
+                separator: "-".to_string(),
+                name: String::new(),
+                delimiter: ".".to_string(),
+                distance: 0,
+            },
+            suffix: Suffix {
+                mode: SuffixMode::GitSha,
+                separator: "+".to_string(),
+            },
+            timestamp: Timestamp {
+                format: "%Y-%m-%d %H:%M:%S %Z".to_string(),
+                last: "2026-01-01 00:00:00 UTC".to_string(),
+            },
+            label: Label {
+                position: LabelPosition::AfterBase,
+            },
+        }
+    }
+
+    #[test]
+    fn bump_patch_increments_and_clears_phase() {
+        let mut v = test_version();
+        v.phase.name = "beta".to_string();
+        v.phase.distance = 2;
+        v.bump(&BumpType::Patch).unwrap();
+        assert_eq!(v.base.patch, Some(1));
+        assert_eq!(v.phase.distance, 0);
+        assert!(v.phase.name.is_empty());
+    }
+
+    #[test]
+    fn bump_minor_requires_patch_key() {
+        let mut v = test_version();
+        v.base.patch = None;
+        let err = v.bump(&BumpType::Minor).unwrap_err();
+        assert!(err.to_string().contains("version.patch is set"));
+    }
+
+    #[test]
+    fn bump_wrong_mode_mentions_base_mode() {
+        let mut v = test_version();
+        let err = v.bump(&BumpType::Calendar).unwrap_err();
+        assert!(err.to_string().contains("base.mode = 'calver'"));
     }
 }

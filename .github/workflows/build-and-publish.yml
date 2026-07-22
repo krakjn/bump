@@ -52,6 +52,14 @@ jobs:
     - name: Build
       run: cargo build --release --target ${{ matrix.target }}
 
+    - name: Clippy
+      if: matrix.cross_compile == false && matrix.os != 'windows-latest'
+      run: cargo clippy --all-targets -- -D warnings
+
+    - name: Unit tests
+      if: matrix.cross_compile == false && matrix.os != 'windows-latest'
+      run: cargo test
+
     - name: Test (skip cross-compiled and Windows targets for now)
       if: matrix.cross_compile == false && matrix.os != 'windows-latest'
       env:

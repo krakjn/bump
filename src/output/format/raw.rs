@@ -15,7 +15,7 @@ const CALVER: &str = r#"{emit_prefix}{case_string}="{version_string}"
 {emit_prefix}{case_timestamp}="{version_timestamp}"
 "#;
 
-pub fn render(fields: &Fields) -> String {
+pub(crate) fn render(fields: &Fields) -> String {
     match fields.version_mode {
         VersionMode::Semver => substitute(SEMVER, fields),
         VersionMode::Calver => substitute(CALVER, fields),

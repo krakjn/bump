@@ -8,13 +8,16 @@ use crate::version::{Version, VersionMode};
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 pub enum Format {
     Raw,
+    #[value(name = "c", alias = "C")]
     C,
+    #[clap(skip)]
     CHeader,
     Go,
     Java,
+    #[value(name = "csharp", alias = "CSharp")]
     CSharp,
     Python,
     Json,
@@ -23,21 +26,6 @@ pub enum Format {
 }
 
 impl Format {
-    pub fn parse(s: &str) -> Option<Self> {
-        match s {
-            "raw" => Some(Self::Raw),
-            "c" => Some(Self::C),
-            "go" => Some(Self::Go),
-            "java" => Some(Self::Java),
-            "csharp" => Some(Self::CSharp),
-            "python" => Some(Self::Python),
-            "json" => Some(Self::Json),
-            "toml" => Some(Self::Toml),
-            "yaml" => Some(Self::Yaml),
-            _ => None,
-        }
-    }
-
     const fn file_description(self) -> Option<&'static str> {
         match self {
             // only called by write
@@ -102,9 +90,9 @@ pub fn write(format: Format, fields: &Fields, path: &Path) -> Result<(), BumpErr
     let content = render(format, fields)?;
     fs::write(path, content).map_err(BumpError::IoError)?;
     if let Some(desc) = format.file_description() {
-        println!("{desc} written to {}", path.display());
+        eprintln!("{desc} written to {}", path.display());
     } else {
-        println!("written to {}", path.display());
+        eprintln!("written to {}", path.display());
     }
     Ok(())
 }

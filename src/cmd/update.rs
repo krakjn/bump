@@ -4,15 +4,14 @@ use crate::{
     version::Version,
 };
 use clap::ArgMatches;
-use std::fs;
-use std::path::Path;
+use std::{fs, path::Path};
 use toml_edit::{DocumentMut, value};
 
 fn load_toml(path: &Path) -> Result<DocumentMut, BumpError> {
     let content = fs::read_to_string(path).map_err(BumpError::IoError)?;
     content
         .parse::<DocumentMut>()
-        .map_err(|e| BumpError::ParseError(format!("failed to parse {}: {}", path.display(), e)))
+        .map_err(|e| BumpError::ParseError(format!("failed to parse {}: {e}", path.display())))
 }
 
 fn save_toml(path: &Path, doc: &DocumentMut) -> Result<(), BumpError> {
@@ -26,7 +25,7 @@ fn set_toml_field(
     value_str: &str,
 ) -> Result<(), BumpError> {
     let Some(table) = doc.get_mut(section) else {
-        return Err(BumpError::ParseError(format!(
+        return Err(BumpError::LogicError(format!(
             "no [{section}] section found"
         )));
     };
@@ -86,10 +85,18 @@ fn pyproject_toml(version: &Version, path: &Path) -> Result<(), BumpError> {
     );
 
     let v_str = print::to_string(version, &PrintOptions::default())?;
-    if doc.get_mut("project").is_some() {
-        set_toml_field(&mut doc, "project", "version", &v_str)?;
-        save_toml(path, &doc)?;
-        println!("pyproject.toml updated to version {v_str}");
+    let Some(project) = doc.get_mut("project") else {
+        return Err(BumpError::LogicError(
+            "no [project] section found in pyproject.toml".to_string(),
+        ));
+    };
+    if project.as_table().is_none() {
+        return Err(BumpError::LogicError(
+            "[project] is not a table in pyproject.toml".to_string(),
+        ));
     }
+    set_toml_field(&mut doc, "project", "version", &v_str)?;
+    save_toml(path, &doc)?;
+    println!("pyproject.toml updated to version {v_str}");
     Ok(())
 }

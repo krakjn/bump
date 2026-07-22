@@ -11,9 +11,7 @@ PREFIX="v-"
 enter_workspace --git
 setup_semver "$PREFIX"
 
-# ---------------------------------------------------------------------------
 section "update Cargo.toml"
-# ---------------------------------------------------------------------------
 
 cat > Cargo.toml <<'EOF'
 [package]
@@ -50,9 +48,7 @@ fi
 echo "ok"
 echo
 
-# ---------------------------------------------------------------------------
 section "update pyproject.toml"
-# ---------------------------------------------------------------------------
 
 cat > pyproject.toml <<'EOF'
 [project]
@@ -80,19 +76,16 @@ fi
 echo "ok"
 echo
 
-echo "[update/pyproject/no-project-silent]"
+echo "[update/pyproject/no-project]"
 cat > pyproject.toml <<'EOF'
 [tool.poetry]
 name = "demo"
 version = "9.9.9"
 EOF
-out="$(bump update pyproject.toml)"
-# still prints PEP warning, but must not rewrite missing [project]
-if grep -q '\[project\]' pyproject.toml; then
-    echo "should not create [project]"
-    cat pyproject.toml
-    exit 1
-fi
+assert_fails \
+    "update/pyproject/no-project" \
+    "bump error >> no [project] section found" \
+    update pyproject.toml
 if [[ "$(grep '^version = ' pyproject.toml)" != 'version = "9.9.9"' ]]; then
     echo "poetry version should be unchanged"
     cat pyproject.toml

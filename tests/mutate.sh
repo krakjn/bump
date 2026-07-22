@@ -10,9 +10,7 @@ PREFIX="v-"
 
 enter_workspace --git
 
-# ---------------------------------------------------------------------------
 section "SemVer formal bumps"
-# ---------------------------------------------------------------------------
 
 setup_semver "$PREFIX"
 bump phase beta >/dev/null
@@ -42,9 +40,7 @@ bump major >/dev/null
 refresh_metadata
 assert_eq "mutate/major" "${PREFIX}1.0.0" p
 
-# ---------------------------------------------------------------------------
 section "Phase bumps"
-# ---------------------------------------------------------------------------
 
 setup_semver "$PREFIX"
 
@@ -57,9 +53,7 @@ assert_eq "mutate/phase/increment" "${PREFIX}0.1.0-rc.2" p
 bump phase alpha >/dev/null
 assert_eq "mutate/phase/switch" "${PREFIX}0.1.0-alpha.1" p
 
-# ---------------------------------------------------------------------------
 section "Calendar bumps"
-# ---------------------------------------------------------------------------
 
 CALVER_TODAY="$(today_calver_base)"
 
@@ -70,25 +64,42 @@ assert_eq "mutate/calendar/date" "$CALVER_TODAY" p
 bump cal >/dev/null
 assert_eq "mutate/calendar/alias-cal-same-day" "${CALVER_TODAY}-1" p
 
-# ---------------------------------------------------------------------------
 section "Wrong-mode errors"
-# ---------------------------------------------------------------------------
 
 setup_semver "$PREFIX"
 assert_fails \
     "mutate/calendar-on-semver" \
-    "version.type = 'calver'" \
+    "base.mode = 'calver'" \
     calendar
 
 setup_calver
 assert_fails \
     "mutate/major-on-calver" \
-    "version.type = 'semver'" \
+    "base.mode = 'semver'" \
     major
 
 assert_fails \
     "mutate/patch-on-calver" \
-    "version.type = 'semver'" \
+    "base.mode = 'semver'" \
+    patch
+
+section "Optional semver base keys"
+
+setup_semver "$PREFIX"
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    sed -i '' '/^minor = /d; /^patch = /d' bump.toml
+else
+    sed -i '/^minor = /d; /^patch = /d' bump.toml
+fi
+
+assert_fails \
+    "mutate/minor-without-minor-key" \
+    "version.minor is set" \
+    minor
+
+assert_fails \
+    "mutate/patch-without-patch-key" \
+    "version.patch is set" \
     patch
 
 echo "All mutate tests passed."

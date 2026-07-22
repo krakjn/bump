@@ -12,7 +12,7 @@ mod yaml;
 use super::{Fields, Format};
 use crate::cmd::BumpError;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 pub enum Case {
     /// version_string
     Snake,
@@ -25,18 +25,6 @@ pub enum Case {
 }
 
 impl Case {
-    pub fn parse(s: &str) -> Result<Self, BumpError> {
-        match s {
-            "snake" => Ok(Self::Snake),
-            "camel" => Ok(Self::Camel),
-            "pascal" => Ok(Self::Pascal),
-            "uppercase" => Ok(Self::Uppercase),
-            other => Err(BumpError::LogicError(format!(
-                "Invalid case: '{other}'. Expected snake, camel, pascal, or uppercase."
-            ))),
-        }
-    }
-
     pub fn apply(self, key: &str) -> String {
         let words: Vec<String> = key
             .split('_')
@@ -153,4 +141,84 @@ pub(crate) fn json_escape(s: &str) -> String {
     }
     out.push('"');
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::output::{Fields, Format};
+    use crate::version::{Base, Label, LabelPosition, Phase, Suffix, SuffixMode, Timestamp, Version, VersionMode};
+
+    #[test]
+    fn case_apply_variants() {
+        assert_eq!(Case::Snake.apply("VERSION_STRING"), "version_string");
+        assert_eq!(Case::Camel.apply("VERSION_STRING"), "versionString");
+        assert_eq!(Case::Pascal.apply("VERSION_STRING"), "VersionString");
+        assert_eq!(Case::Uppercase.apply("VERSION_STRING"), "VERSION_STRING");
+    }
+
+    #[test]
+    fn substitute_replaces_placeholders() {
+        let fields = Fields {
+            emit_prefix: "APP_".to_string(),
+            case_string: "VERSION_STRING".to_string(),
+            case_prefix: String::new(),
+            case_major: String::new(),
+            case_minor: String::new(),
+            case_patch: String::new(),
+            case_phase: String::new(),
+            case_phase_distance: String::new(),
+            case_timestamp: String::new(),
+            version_string: "v-1.0.0".to_string(),
+            version_timestamp: String::new(),
+            version_prefix: String::new(),
+            version_major: 1,
+            version_minor: 0,
+            version_patch: 0,
+            version_phase: String::new(),
+            version_phase_distance: 0,
+            version_mode: VersionMode::Semver,
+        };
+        let out = substitute("#define {emit_prefix}{case_string} \"{version_string}\"", &fields);
+        assert_eq!(out, "#define APP_VERSION_STRING \"v-1.0.0\"");
+    }
+
+    #[test]
+    fn json_escape_quotes() {
+        assert_eq!(json_escape(r#"say "hi""#), r#""say \"hi\"""#);
+    }
+
+    #[test]
+    fn render_raw_contains_version_string() {
+        let version = Version {
+            prefix: "v-".to_string(),
+            base: Base {
+                mode: VersionMode::Semver,
+                delimiter: ".".to_string(),
+                major: 0,
+                minor: Some(1),
+                patch: Some(0),
+            },
+            phase: Phase {
+                separator: "-".to_string(),
+                name: String::new(),
+                delimiter: ".".to_string(),
+                distance: 0,
+            },
+            suffix: Suffix {
+                mode: SuffixMode::GitSha,
+                separator: "+".to_string(),
+            },
+            timestamp: Timestamp {
+                format: String::new(),
+                last: String::new(),
+            },
+            label: Label {
+                position: LabelPosition::AfterBase,
+            },
+        };
+        let fields = Fields::populate("", Case::Uppercase, &version).unwrap();
+        let out = render(Format::Raw, &fields).unwrap();
+        assert!(out.contains("VERSION_STRING=\"v-0.1.0\""));
+    }
 }

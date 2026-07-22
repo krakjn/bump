@@ -77,7 +77,11 @@ refresh_metadata() {
 
 setup_semver() {
     local prefix="${1:-v-}"
-    bump init >/dev/null
+    if [[ -f bump.toml ]]; then
+        bump init --force >/dev/null
+    else
+        bump init >/dev/null
+    fi
     bump meta --prefix "$prefix" >/dev/null
     refresh_metadata
 }
@@ -154,6 +158,28 @@ assert_contains() {
     echo "[$name]"
     echo "needle: $needle"
     if [[ "$actual" != *"$needle"* ]]; then
+        echo "actual: $actual"
+        exit 1
+    fi
+    echo "ok"
+    echo
+}
+
+assert_bumpfile_report() {
+    local name="$1"
+    local verb="$2"
+    shift 2
+    local actual
+    actual="$(bump "$@")"
+    refresh_metadata
+    echo "[$name]"
+    if [[ "$actual" != *"${verb}"* ]]; then
+        echo "expected verb '$verb' in report"
+        echo "actual: $actual"
+        exit 1
+    fi
+    if [[ "$actual" != *"  ${TIMESTAMP}"* ]]; then
+        echo "expected timestamp in report"
         echo "actual: $actual"
         exit 1
     fi

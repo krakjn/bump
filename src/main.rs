@@ -45,8 +45,10 @@ fn main() -> ExitCode {
         }
         Some((_name, _)) => unreachable!("clap captures this"),
         None => {
-            eprintln!("ERROR: No command provided, Try one below!");
-            eprintln!("------------------------------------------");
+            eprintln!(
+                "{}",
+                BumpError::LogicError("No command provided. Try one below.".to_string())
+            );
             let _ = cli::cli().print_help();
             ExitCode::FAILURE
         }

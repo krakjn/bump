@@ -8,16 +8,14 @@ source "$(dirname "$0")/lib.sh"
 
 PREFIX="v-"
 
-# ---------------------------------------------------------------------------
 section "tag requires git"
-# ---------------------------------------------------------------------------
 
 enter_workspace
 setup_semver "$PREFIX"
 
 assert_fails \
     "tag/not-a-git-repo" \
-    "Not in a git repository" \
+    "Not a git repository" \
     tag
 
 # Replace non-git workspace with a git one for the remaining checks.
@@ -25,9 +23,7 @@ rm -rf "$WORKSPACE"
 enter_workspace --git
 setup_semver "$PREFIX"
 
-# ---------------------------------------------------------------------------
 section "tag creates annotated tag"
-# ---------------------------------------------------------------------------
 
 tag_name="${PREFIX}0.1.0"
 

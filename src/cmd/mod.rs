@@ -24,7 +24,8 @@ pub enum BumpType {
     Major,
     Minor,
     Patch,
-    Phase(String),
+    PhaseSet(String),
+    PhaseIncrement,
     Calendar,
 }
 
@@ -41,14 +42,14 @@ impl fmt::Display for BumpError {
         match self {
             Self::IoError(err) => {
                 if err.kind() == io::ErrorKind::NotFound {
-                    write!(f, "bump error: I/O >> file not found '{err}'")
+                    write!(f, "bump error >> file not found: {err}")
                 } else {
-                    write!(f, "bump error: I/O >> {err}")
+                    write!(f, "bump error >> I/O: {err}")
                 }
             }
-            Self::ParseError(field) => write!(f, "bump error: parse >> {field}"),
+            Self::ParseError(field) => write!(f, "bump error >> {field}"),
             Self::LogicError(msg) => write!(f, "bump error >> {msg}"),
-            Self::Git(msg) => write!(f, "bump error: git >> {msg}"),
+            Self::Git(msg) => write!(f, "bump error >> {msg}"),
         }
     }
 }
@@ -89,6 +90,19 @@ pub fn load_bumpfile(matches: &ArgMatches) -> Result<BumpFile, BumpError> {
 
 fn git_cmd() -> ProcessCommand {
     ProcessCommand::new("git")
+}
+
+pub(crate) fn git_tag_exists(tag_name: &str) -> Result<bool, BumpError> {
+    let output = git_cmd()
+        .args([
+            "rev-parse",
+            "-q",
+            "--verify",
+            &format!("refs/tags/{tag_name}"),
+        ])
+        .output()
+        .map_err(|e| BumpError::Git(format!("failed to check if tag exists: {e}")))?;
+    Ok(output.status.success())
 }
 
 pub fn run_git(command: &str) -> Result<String, BumpError> {

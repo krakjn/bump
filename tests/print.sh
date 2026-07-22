@@ -36,7 +36,7 @@ format_phase() {
     fi
 }
 
-# Mirror print.rs label slot assembly.
+# Spot-check label slot assembly; core compose logic is covered by Rust unit tests.
 # Args: prefix base phase label_pos no_prefix no_phase with_label
 assemble() {
     local prefix="$1"
@@ -156,9 +156,7 @@ run_label_slots() {
     assert_eq "label/${label_pos}/full-with-label" "${with_label}+${GIT_SHA}  ${TIMESTAMP}" p --full --with-label "$LABEL"
 }
 
-# ---------------------------------------------------------------------------
 section "Aliases (print / p / show)"
-# ---------------------------------------------------------------------------
 
 setup_semver "$PREFIX"
 DEFAULT="$(bump print)"
@@ -181,9 +179,7 @@ fi
 echo "ok"
 echo
 
-# ---------------------------------------------------------------------------
 section "Compose after phase bumps"
-# ---------------------------------------------------------------------------
 
 setup_semver "$PREFIX"
 
@@ -199,9 +195,7 @@ bump phase beta >/dev/null
 refresh_metadata
 run_print_permutations "phase/switch-beta" "$PREFIX" "0.1.0" "beta" "1" "$DEFAULT_LABEL_POSITION"
 
-# ---------------------------------------------------------------------------
 section "Compose after formal bumps"
-# ---------------------------------------------------------------------------
 
 setup_semver "$PREFIX"
 
@@ -217,9 +211,7 @@ bump major >/dev/null
 refresh_metadata
 run_print_permutations "formal/major" "$PREFIX" "1.0.0" "" "0" "$DEFAULT_LABEL_POSITION"
 
-# ---------------------------------------------------------------------------
 section "Compose after calendar bumps"
-# ---------------------------------------------------------------------------
 
 CALVER_TODAY="$(today_calver_base)"
 
@@ -232,9 +224,7 @@ bump calendar >/dev/null
 refresh_metadata
 run_print_permutations "calendar/same-day" "" "$CALVER_TODAY" "" "1" "$DEFAULT_LABEL_POSITION"
 
-# ---------------------------------------------------------------------------
 section "Label positions"
-# ---------------------------------------------------------------------------
 
 for label_pos in "${LABEL_POSITIONS[@]}"; do
     setup_semver "$PREFIX"
@@ -243,5 +233,29 @@ for label_pos in "${LABEL_POSITIONS[@]}"; do
     refresh_metadata
     run_label_slots "$label_pos" "$PREFIX" "0.1.0" "$PHASE_NAMED" "1"
 done
+
+section "Print suffix requires git"
+
+NOGIT_DIR="$(mktemp -d)"
+cp bump.toml "$NOGIT_DIR/"
+(
+    cd "$NOGIT_DIR"
+    set +e
+    output="$(bump p --with-suffix 2>&1)"
+    status=$?
+    set -e
+    if [[ "$status" -eq 0 ]]; then
+        echo "expected failure for --with-suffix outside git repo"
+        exit 1
+    fi
+    if [[ "$output" != *"Not a git repository"* ]]; then
+        echo "unexpected output: $output"
+        exit 1
+    fi
+)
+rm -rf "$NOGIT_DIR"
+echo "[print/with-suffix/no-git]"
+echo "ok"
+echo
 
 echo "All print tests passed."

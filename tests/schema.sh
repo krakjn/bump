@@ -9,9 +9,7 @@ source "$(dirname "$0")/lib.sh"
 MALFORMED="$FIXTURES/malformed"
 MODE_SWAP="$FIXTURES/mode-swap"
 
-# ---------------------------------------------------------------------------
 section "Malformed / legacy bumpfiles"
-# ---------------------------------------------------------------------------
 
 assert_fails \
     "schema/v6-semver" \
@@ -78,9 +76,7 @@ assert_prints \
     "v0.1.0" \
     p "$MALFORMED/valid.toml"
 
-# ---------------------------------------------------------------------------
 section "Mode key rewrite"
-# ---------------------------------------------------------------------------
 
 assert_print_silent \
     "schema/semver-mode-calver-keys/print" \

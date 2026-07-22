@@ -14,6 +14,7 @@ if [[ -n "${BUMP_BIN:-}" && "$BUMP_BIN" != /* ]]; then
 fi
 
 SUITES=(
+    cli
     print
     mutate
     meta

@@ -1,4 +1,4 @@
-use crate::cmd::{BumpError, is_git_repository, load_bumpfile};
+use crate::cmd::{BumpError, git_tag_exists, is_git_repository, load_bumpfile};
 use crate::print::{self, PrintOptions};
 use crate::version::Version;
 use clap::ArgMatches;
@@ -8,23 +8,9 @@ fn git_cmd() -> ProcessCommand {
     ProcessCommand::new("git")
 }
 
-fn git_tag_exists(tag_name: &str) -> Result<bool, BumpError> {
-    let output = git_cmd()
-        .args([
-            "rev-parse",
-            "-q",
-            "--verify",
-            &format!("refs/tags/{tag_name}"),
-        ])
-        .output()
-        .map_err(|e| BumpError::Git(format!("failed to check if tag exists: {e}")))?;
-
-    Ok(output.status.success())
-}
-
 fn create_git_tag(version: &Version, message: Option<&str>) -> Result<(), BumpError> {
     if !is_git_repository() {
-        return Err(BumpError::LogicError("Not in a git repository".to_string()));
+        return Err(BumpError::Git("Not a git repository".to_string()));
     }
 
     let tag_name = print::to_string(version, &PrintOptions::default())?;

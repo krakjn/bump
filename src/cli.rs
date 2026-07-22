@@ -2,6 +2,8 @@ use clap::builder::StyledStr;
 use clap::builder::styling::{AnsiColor, Styles};
 use clap::{Arg, Command, value_parser};
 use clap_complete::aot::Shell;
+use crate::output::{Case, Format};
+use crate::version::SuffixMode;
 use std::fmt::Write;
 
 const HELP_STYLES: Styles = Styles::styled()
@@ -18,7 +20,7 @@ fn root_usage() -> StyledStr {
     let mut usage = StyledStr::new();
     let _ = write!(
         usage,
-        "{literal}bump{literal:#} {placeholder}[OPTIONS]{placeholder:#} {placeholder}[COMMAND]{placeholder:#} {placeholder}[BUMPFILE]{placeholder:#}"
+        "{literal}bump{literal:#} {placeholder}[OPTIONS]{placeholder:#} {placeholder}<COMMAND>{placeholder:#}"
     );
     usage
 }
@@ -88,7 +90,6 @@ pub fn cli() -> Command {
         .version(env!("CARGO_PKG_VERSION"))
         .about("Automatic un-opinionated version bumping")
         .override_usage(root_usage())
-        // .arg_required_else_help(true)
         .subcommand(
             Command::new("print")
                 .about("Print composed version from BUMPFILE without newline")
@@ -149,9 +150,7 @@ pub fn cli() -> Command {
                     Arg::new("suffix")
                         .long("suffix")
                         .value_name("MODE")
-                        .value_parser(clap::builder::PossibleValuesParser::new([
-                            "git_sha", "branch",
-                        ]))
+                        .value_parser(value_parser!(SuffixMode))
                         .num_args(1)
                         .help("Set suffix mode"),
                 )
@@ -163,9 +162,7 @@ pub fn cli() -> Command {
                 .arg(
                     Arg::new("format")
                         .value_name("FORMAT")
-                        .value_parser(clap::builder::PossibleValuesParser::new([
-                            "raw", "c", "java", "csharp", "go", "python", "json", "toml", "yaml",
-                        ]))
+                        .value_parser(value_parser!(Format))
                         .num_args(1)
                         .required(true)
                         .help("Output format"),
@@ -184,12 +181,7 @@ pub fn cli() -> Command {
                         .short('c')
                         .long("case")
                         .value_name("CASE")
-                        .value_parser(clap::builder::PossibleValuesParser::new([
-                            "snake",
-                            "camel",
-                            "pascal",
-                            "uppercase",
-                        ]))
+                        .value_parser(value_parser!(Case))
                         .num_args(1)
                         .default_value("uppercase")
                         .help("Identifier case for language/raw emit (ignored for json/toml/yaml)"),
@@ -208,6 +200,12 @@ pub fn cli() -> Command {
         .subcommand(
             Command::new("init")
                 .about("Initialize a new version file with default values")
+                .arg(
+                    Arg::new("force")
+                        .long("force")
+                        .action(clap::ArgAction::SetTrue)
+                        .help("Overwrite an existing bumpfile"),
+                )
                 .arg(bumpfile_arg()),
         )
         .subcommand(

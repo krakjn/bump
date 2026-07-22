@@ -1,6 +1,6 @@
 use super::{Fields, json_escape, nested_pairs, nested_root_key};
 
-pub fn render(fields: &Fields) -> String {
+pub(crate) fn render(fields: &Fields) -> String {
     let mut out = String::new();
     out.push('[');
     out.push_str(&nested_root_key(fields));
