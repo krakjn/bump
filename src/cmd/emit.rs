@@ -7,7 +7,7 @@ pub fn emit(matches: &ArgMatches) -> Result<(), BumpError> {
     let format_str = matches
         .get_one::<String>("format")
         .expect("FORMAT not provided");
-    let Some(format) = Format::parse(format_str) else {
+    let Some(mut format) = Format::parse(format_str) else {
         return Err(BumpError::LogicError(format!(
             "Invalid emit format: {format_str}"
         )));
@@ -31,6 +31,7 @@ pub fn emit(matches: &ArgMatches) -> Result<(), BumpError> {
         for output_file in outputs {
             let path = Path::new(output_file);
             ensure_directory_exists(path)?;
+            format = if format == Format::C { Format::CHeader } else { format };
             output::write(format, &fields, path)?;
         }
     } else {

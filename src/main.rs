@@ -43,12 +43,12 @@ fn main() -> ExitCode {
             generate(shell, &mut cmd, "bump", &mut std::io::stdout());
             ExitCode::SUCCESS
         }
-        Some((name, _)) => egress(Err(BumpError::LogicError(format!(
-            "Unknown command: {name}"
-        )))),
+        Some((_name, _)) => unreachable!("clap captures this"),
         None => {
+            eprintln!("ERROR: No command provided, Try one below!");
+            eprintln!("------------------------------------------");
             let _ = cli::cli().print_help();
-            ExitCode::SUCCESS
+            ExitCode::FAILURE
         }
     }
 }

@@ -1,4 +1,5 @@
 mod c;
+mod c_header;
 mod csharp;
 mod go;
 mod java;
@@ -103,6 +104,7 @@ pub fn render(format: Format, fields: &Fields) -> Result<String, BumpError> {
     Ok(match format {
         Format::Raw => raw::render(fields),
         Format::C => c::render(fields),
+        Format::CHeader => c_header::render(fields), // only used on output
         Format::Go => go::render(fields),
         Format::Java => java::render(fields),
         Format::CSharp => csharp::render(fields),

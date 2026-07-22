@@ -88,8 +88,7 @@ pub fn cli() -> Command {
         .version(env!("CARGO_PKG_VERSION"))
         .about("Automatic un-opinionated version bumping")
         .override_usage(root_usage())
-        .arg_required_else_help(true)
-        .arg(bumpfile_arg())
+        // .arg_required_else_help(true)
         .subcommand(
             Command::new("print")
                 .about("Print composed version from BUMPFILE without newline")

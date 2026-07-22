@@ -12,6 +12,7 @@ use std::path::Path;
 pub enum Format {
     Raw,
     C,
+    CHeader,
     Go,
     Java,
     CSharp,
