@@ -147,7 +147,9 @@ pub(crate) fn json_escape(s: &str) -> String {
 mod tests {
     use super::*;
     use crate::output::{Fields, Format};
-    use crate::version::{Base, Label, LabelPosition, Phase, Suffix, SuffixMode, Timestamp, Version, VersionMode};
+    use crate::version::{
+        Base, Label, LabelPosition, Phase, Suffix, SuffixMode, Timestamp, Version, VersionMode,
+    };
 
     #[test]
     fn case_apply_variants() {

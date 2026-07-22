@@ -1,10 +1,12 @@
 use crate::cmd::{BumpError, ensure_directory_exists, load_bumpfile};
-use crate::output::{self, Case, Format, Fields};
+use crate::output::{self, Case, Fields, Format};
 use clap::ArgMatches;
 use std::path::Path;
 
 pub fn emit(matches: &ArgMatches) -> Result<(), BumpError> {
-    let mut format = *matches.get_one::<Format>("format").expect("FORMAT not provided");
+    let mut format = *matches
+        .get_one::<Format>("format")
+        .expect("FORMAT not provided");
     let case = matches
         .get_one::<Case>("case")
         .copied()

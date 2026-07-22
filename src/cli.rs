@@ -1,9 +1,9 @@
+use crate::output::{Case, Format};
+use crate::version::SuffixMode;
 use clap::builder::StyledStr;
 use clap::builder::styling::{AnsiColor, Styles};
 use clap::{Arg, Command, value_parser};
 use clap_complete::aot::Shell;
-use crate::output::{Case, Format};
-use crate::version::SuffixMode;
 use std::fmt::Write;
 
 const HELP_STYLES: Styles = Styles::styled()
@@ -178,7 +178,6 @@ pub fn cli() -> Command {
                 )
                 .arg(
                     Arg::new("case")
-                        .short('c')
                         .long("case")
                         .value_name("CASE")
                         .value_parser(value_parser!(Case))
