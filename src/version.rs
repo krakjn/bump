@@ -160,11 +160,6 @@ impl Version {
                     ));
                 }
                 self.base.minor = self.base.minor.map(|m| m + 1);
-                if self.base.patch.is_none() {
-                    return Err(BumpError::LogicError(
-                        "Operation only valid for version.patch is set".to_string(),
-                    ));
-                }
                 self.base.patch = self.base.patch.map(|_| 0);
                 self.clear_phase();
             }
@@ -257,11 +252,105 @@ mod tests {
     }
 
     #[test]
-    fn bump_minor_requires_patch_key() {
+    fn bump_minor_without_patch_key_succeeds() {
         let mut v = test_version();
         v.base.patch = None;
+        v.bump(&BumpType::Minor).unwrap();
+        assert_eq!(v.base.minor, Some(2));
+        assert_eq!(v.base.patch, None);
+    }
+
+    #[test]
+    fn bump_minor_resets_patch_when_present() {
+        let mut v = test_version();
+        v.base.patch = Some(5);
+        v.bump(&BumpType::Minor).unwrap();
+        assert_eq!(v.base.minor, Some(2));
+        assert_eq!(v.base.patch, Some(0));
+    }
+
+    #[test]
+    fn bump_minor_requires_minor_key() {
+        let mut v = test_version();
+        v.base.minor = None;
         let err = v.bump(&BumpType::Minor).unwrap_err();
+        assert!(err.to_string().contains("version.minor is set"));
+    }
+
+    #[test]
+    fn bump_patch_requires_patch_key() {
+        let mut v = test_version();
+        v.base.patch = None;
+        let err = v.bump(&BumpType::Patch).unwrap_err();
         assert!(err.to_string().contains("version.patch is set"));
+    }
+
+    #[test]
+    fn bump_major_with_major_only_succeeds() {
+        let mut v = test_version();
+        v.base.minor = None;
+        v.base.patch = None;
+        v.bump(&BumpType::Major).unwrap();
+        assert_eq!(v.base.major, 1);
+        assert_eq!(v.base.minor, None);
+        assert_eq!(v.base.patch, None);
+    }
+
+    #[test]
+    fn bump_major_resets_present_optional_keys_only() {
+        let mut v = test_version();
+        v.base.patch = None;
+        v.bump(&BumpType::Major).unwrap();
+        assert_eq!(v.base.major, 1);
+        assert_eq!(v.base.minor, Some(0));
+        assert_eq!(v.base.patch, None);
+    }
+
+    #[test]
+    fn bump_patch_with_patch_only_succeeds() {
+        let mut v = test_version();
+        v.base.minor = None;
+        v.bump(&BumpType::Patch).unwrap();
+        assert_eq!(v.base.major, 0);
+        assert_eq!(v.base.minor, None);
+        assert_eq!(v.base.patch, Some(1));
+    }
+
+    #[test]
+    fn bump_phase_unaffected_by_missing_base_keys() {
+        let mut v = test_version();
+        v.base.minor = None;
+        v.base.patch = None;
+        v.bump(&BumpType::PhaseSet("beta".to_string())).unwrap();
+        assert_eq!(v.phase.name, "beta");
+        assert_eq!(v.phase.distance, 1);
+    }
+
+    fn calver_version() -> Version {
+        let mut v = test_version();
+        v.base.mode = VersionMode::Calver;
+        v.base.major = 2020;
+        v.base.minor = Some(1);
+        v.base.patch = Some(1);
+        v
+    }
+
+    #[test]
+    fn calver_calendar_year_only_keeps_absent_month_and_day() {
+        let mut v = calver_version();
+        v.base.minor = None;
+        v.base.patch = None;
+        v.bump(&BumpType::Calendar).unwrap();
+        assert_eq!(v.base.minor, None);
+        assert_eq!(v.base.patch, None);
+    }
+
+    #[test]
+    fn calver_calendar_no_day_keeps_absent_day() {
+        let mut v = calver_version();
+        v.base.patch = None;
+        v.bump(&BumpType::Calendar).unwrap();
+        assert_eq!(v.base.patch, None);
     }
 
     #[test]

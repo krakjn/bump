@@ -83,23 +83,112 @@ assert_fails \
     "base.mode = 'semver'" \
     patch
 
-section "Optional semver base keys"
+section "Optional semver base keys — major only"
 
-setup_semver "$PREFIX"
-if [[ "$(uname -s)" == "Darwin" ]]; then
-    sed -i '' '/^minor = /d; /^patch = /d' bump.toml
-else
-    sed -i '/^minor = /d; /^patch = /d' bump.toml
-fi
+setup_semver_major_only "$PREFIX"
+
+assert_eq "mutate/optional/semver/major-only/print" "${PREFIX}0" p
+
+bump major >/dev/null
+refresh_metadata
+assert_eq "mutate/optional/semver/major-only/major" "${PREFIX}1" p
+assert_base_lacks_key bump.toml minor
+assert_base_lacks_key bump.toml patch
 
 assert_fails \
-    "mutate/minor-without-minor-key" \
+    "mutate/optional/semver/major-only/minor" \
     "version.minor is set" \
     minor
 
 assert_fails \
-    "mutate/patch-without-patch-key" \
+    "mutate/optional/semver/major-only/patch" \
     "version.patch is set" \
     patch
+
+bump phase beta >/dev/null
+assert_eq "mutate/optional/semver/major-only/phase" "${PREFIX}1-beta.1" p
+
+section "Optional semver base keys — no patch (major + minor)"
+
+setup_semver_no_patch "$PREFIX"
+
+assert_eq "mutate/optional/semver/no-patch/print" "${PREFIX}0.1" p
+
+bump minor >/dev/null
+refresh_metadata
+assert_eq "mutate/optional/semver/no-patch/minor" "${PREFIX}0.2" p
+assert_base_has_key bump.toml minor
+assert_base_lacks_key bump.toml patch
+
+assert_fails \
+    "mutate/optional/semver/no-patch/patch" \
+    "version.patch is set" \
+    patch
+
+bump major >/dev/null
+refresh_metadata
+assert_eq "mutate/optional/semver/no-patch/major" "${PREFIX}1.0" p
+assert_base_has_key bump.toml minor
+assert_base_lacks_key bump.toml patch
+
+bump phase rc >/dev/null
+assert_eq "mutate/optional/semver/no-patch/phase" "${PREFIX}1.0-rc.1" p
+
+section "Optional semver base keys — no minor (major + patch)"
+
+setup_semver_no_minor "$PREFIX"
+
+assert_eq "mutate/optional/semver/no-minor/print" "${PREFIX}0.0" p
+
+assert_fails \
+    "mutate/optional/semver/no-minor/minor" \
+    "version.minor is set" \
+    minor
+
+bump patch >/dev/null
+refresh_metadata
+assert_eq "mutate/optional/semver/no-minor/patch" "${PREFIX}0.1" p
+assert_base_lacks_key bump.toml minor
+assert_base_has_key bump.toml patch
+
+bump major >/dev/null
+refresh_metadata
+assert_eq "mutate/optional/semver/no-minor/major-resets-patch" "${PREFIX}1.0" p
+assert_base_lacks_key bump.toml minor
+assert_base_has_key bump.toml patch
+
+section "Optional calver base keys — year only"
+
+setup_calver_year_only
+
+assert_eq "mutate/optional/calver/year-only/print" "2020" p
+
+bump calendar >/dev/null
+refresh_metadata
+CALVER_YEAR="$(date -u +"%Y")"
+assert_eq "mutate/optional/calver/year-only/calendar" "$CALVER_YEAR" p
+assert_base_has_key bump.toml year
+assert_base_lacks_key bump.toml month
+assert_base_lacks_key bump.toml day
+
+bump calendar >/dev/null
+refresh_metadata
+assert_eq "mutate/optional/calver/year-only/calendar-same-year" "${CALVER_YEAR}-1" p
+assert_base_lacks_key bump.toml month
+assert_base_lacks_key bump.toml day
+
+section "Optional calver base keys — no day (year + month)"
+
+setup_calver_no_day
+
+assert_eq "mutate/optional/calver/no-day/print" "2020.01" p
+
+bump calendar >/dev/null
+refresh_metadata
+CALVER_MONTH="$(date -u +"%Y.%m")"
+assert_eq "mutate/optional/calver/no-day/calendar" "$CALVER_MONTH" p
+assert_base_has_key bump.toml year
+assert_base_has_key bump.toml month
+assert_base_lacks_key bump.toml day
 
 echo "All mutate tests passed."

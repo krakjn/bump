@@ -131,6 +131,53 @@ today_calver_base() {
     date -u +"%Y.%m.%d"
 }
 
+# Remove one or more keys from the [base] table (semver or calver field names).
+remove_base_keys() {
+    local file="${1:-bump.toml}"
+    shift
+    local key pattern
+    pattern=""
+    for key in "$@"; do
+        if [[ -n "$pattern" ]]; then
+            pattern="${pattern}; "
+        fi
+        pattern="${pattern}/^${key} = /d"
+    done
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        sed -i '' "$pattern" "$file"
+    else
+        sed -i "$pattern" "$file"
+    fi
+}
+
+setup_semver_major_only() {
+    local prefix="${1:-v-}"
+    setup_semver "$prefix"
+    remove_base_keys bump.toml minor patch
+}
+
+setup_semver_no_patch() {
+    local prefix="${1:-v-}"
+    setup_semver "$prefix"
+    remove_base_keys bump.toml patch
+}
+
+setup_semver_no_minor() {
+    local prefix="${1:-v-}"
+    setup_semver "$prefix"
+    remove_base_keys bump.toml minor
+}
+
+setup_calver_year_only() {
+    setup_calver
+    remove_base_keys bump.toml month day
+}
+
+setup_calver_no_day() {
+    setup_calver
+    remove_base_keys bump.toml day
+}
+
 # --- asserts -----------------------------------------------------------------
 
 assert_eq() {
