@@ -227,10 +227,6 @@ pub fn cli() -> Command {
                     Arg::new("path")
                         .value_name("PATH")
                         .num_args(1)
-                        .value_parser(clap::builder::PossibleValuesParser::new([
-                            "Cargo.toml",
-                            "pyproject.toml",
-                        ]))
                         .required(true)
                         .help("File type bump knows how to update"),
                 )

@@ -43,13 +43,14 @@ pub fn update(matches: &ArgMatches) -> Result<(), BumpError> {
         ))
     })?;
     let file_path = resolve_path(path_str);
-
-    match path_str.as_str() {
-        "Cargo.toml" => cargo_toml(&version, &file_path),
-        "pyproject.toml" => pyproject_toml(&version, &file_path),
-        _ => Err(BumpError::LogicError(format!(
+    if file_path.ends_with("Cargo.toml") {
+        cargo_toml(&version, &file_path)
+    } else if file_path.ends_with("pyproject.toml") {
+        pyproject_toml(&version, &file_path)
+    } else {
+        Err(BumpError::LogicError(format!(
             "Unsupported file type: {path_str}"
-        ))),
+        )))
     }
 }
 
