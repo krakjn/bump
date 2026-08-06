@@ -21,12 +21,36 @@ success() { printf '%b[SUCCESS]%b %s\n' "$GREEN" "$NC" "$*"; }
 warn()    { printf '%b[WARN]%b %s\n'    "$YELLOW" "$NC" "$*"; }
 die()     { printf '%b[ERROR]%b %s\n'   "$RED"   "$NC" "$*" >&2; exit 1; }
 
-echo -e " ____  __  __  __  __  ____ "
-echo -e "(  _ \\(  )(  )(  \\/  )(  _ \\"
-echo -e " ) _ < )(__)(  )    (  )___/"
-echo -e "(____/(______)(_/\\/\\_)(__)  "
+echo "${YELLOW} ____  __  __  __  __  ____"
+echo "(  _ \\(  )(  )(  \\/  )(  _ \\"
+echo " ) _ < )(__)(  )    (  )___/"
+echo "(____/(______)(_/\\/\\_)(__) ${NC}"
 
 command -v curl >/dev/null 2>&1 || die "curl is required"
+
+DEST=/usr/local/bin
+
+while [ $# -gt 0 ]; do
+  case $1 in
+    --dest)
+      [ $# -ge 2 ] || die "--dest requires a path"
+      DEST=$2
+      shift 2
+      ;;
+    -h|--help)
+      echo "Usage: $0 [--dest DEST]"
+      echo ""
+      echo "  --dest PATH   Install bump to PATH/bump (default: $DEST)"
+      echo ""
+      echo "When piped from curl, pass options after sh -s --:"
+      echo "  curl -fsSL ... | sh -s -- --dest \"\$HOME/.local/bin\""
+      exit 0
+      ;;
+    *)
+      die "Unknown option: $1 (try --help)"
+      ;;
+  esac
+done
 
 platform=$(uname -m)-$(uname -s | cut -d- -f1)
 case "$platform" in
@@ -41,15 +65,8 @@ case "$platform" in
 esac
 info "Platform: $os/$arch"
 
-# Update in place when bump is already on PATH
-if command -v bump >/dev/null 2>&1; then
-  target=$(command -v bump)
-  version=$(bump --version 2>/dev/null || echo bump)
-  info "Updating $version at $target"
-else
-  target=/usr/local/bin/bump
-  info "Installing to $target"
-fi
+target=$DEST/bump
+info "Installing to $target"
 dir=$(dirname "$target")
 
 TOKEN="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
@@ -90,4 +107,4 @@ else
 fi
 trap - EXIT INT TERM
 
-success "Installed bump $(bump --version) to $target"
+success "Installed bump $("$target" --version) to $target"
