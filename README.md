@@ -96,6 +96,10 @@ bump major     # 1.0.0 -> 2.0.0, clears phase
 bump minor     # 1.0.0 -> 1.1.0, clears phase
 bump patch     # 1.0.0 -> 1.0.1, clears phase
 
+# Conditional bump (monorepo): watches the directory containing BUMPFILE
+bump patch --if-changed lib/bump.toml              # last commit only (HEAD~1)
+bump patch --if-changed-since abc1234 lib/bump.toml  # since SHA
+
 # Phase workflow
 bump phase alpha  # 1.1.0 -> 1.1.0-alpha.1
 bump phase        # increment phase distance, e.g. 1.1.0-alpha.2

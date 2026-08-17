@@ -1,3 +1,4 @@
+mod changed;
 mod emit;
 mod init;
 mod meta;
@@ -138,4 +139,77 @@ pub fn get_git_commit_sha() -> Result<String, BumpError> {
 
 pub fn get_git_branch() -> Result<String, BumpError> {
     run_git("rev-parse --abbrev-ref HEAD")
+}
+
+pub(crate) fn git_ref_exists(rev: &str) -> Result<bool, BumpError> {
+    let output = git_cmd()
+        .args(["rev-parse", "-q", "--verify", rev])
+        .output()
+        .map_err(|e| BumpError::Git(format!("failed to resolve git ref '{rev}': {e}")))?;
+    Ok(output.status.success())
+}
+
+pub fn git_diff_name_only(since: &str, watch_path: &str) -> Result<Vec<String>, BumpError> {
+    let range = format!("{since}..HEAD");
+    let output = git_cmd()
+        .args(["diff", "--name-only", &range, "--", watch_path])
+        .output()
+        .map_err(|e| BumpError::Git(format!("git diff --name-only: {e}")))?;
+
+    if !output.status.success() {
+        return Err(BumpError::Git(format!(
+            "git diff --name-only: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )));
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter(|line| !line.is_empty())
+        .map(str::to_string)
+        .collect())
+}
+
+pub(crate) fn repo_relative_watch_dir(bumpfile_path: &Path) -> Result<String, BumpError> {
+    if !is_git_repository() {
+        return Err(BumpError::Git("Not a git repository".to_string()));
+    }
+
+    let repo_root = PathBuf::from(run_git("rev-parse --show-toplevel")?);
+    let bumpfile_abs = if bumpfile_path.is_absolute() {
+        bumpfile_path.to_path_buf()
+    } else {
+        std::env::current_dir()
+            .map_err(BumpError::IoError)?
+            .join(bumpfile_path)
+    };
+
+    let watch_abs = bumpfile_abs
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| repo_root.clone());
+
+    let repo_root = repo_root.canonicalize().map_err(BumpError::IoError)?;
+    let watch_abs = watch_abs.canonicalize().map_err(BumpError::IoError)?;
+
+    if watch_abs == repo_root {
+        return Ok(".".to_string());
+    }
+
+    watch_abs
+        .strip_prefix(&repo_root)
+        .map(|relative| {
+            let path = relative.to_string_lossy().replace('\\', "/");
+            if path.is_empty() {
+                ".".to_string()
+            } else {
+                path
+            }
+        })
+        .map_err(|_| {
+            BumpError::Git(format!(
+                "bumpfile path {} is outside the git repository",
+                bumpfile_path.display()
+            ))
+        })
 }

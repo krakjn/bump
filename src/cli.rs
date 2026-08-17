@@ -34,6 +34,30 @@ fn bumpfile_arg() -> Arg {
         .help("Path to the configuration file")
 }
 
+fn if_changed_args() -> Vec<Arg> {
+    vec![
+        Arg::new("if-changed")
+            .long("if-changed")
+            .action(clap::ArgAction::SetTrue)
+            .group("if-changed-mode")
+            .help("Skip bump if the bumpfile directory did not change in the last commit"),
+        Arg::new("if-changed-since")
+            .long("if-changed-since")
+            .value_name("SHA")
+            .value_parser(clap::value_parser!(String))
+            .num_args(1)
+            .group("if-changed-mode")
+            .help("Skip bump if the bumpfile directory did not change since SHA"),
+    ]
+}
+
+fn semver_mutate_cmd(name: &'static str, about: &'static str) -> Command {
+    Command::new(name)
+        .about(about)
+        .args(if_changed_args())
+        .arg(bumpfile_arg())
+}
+
 fn print_args() -> Vec<Arg> {
     vec![
         Arg::new("only-prefix")
@@ -99,21 +123,9 @@ pub fn cli() -> Command {
                 .args(print_flags)
                 .arg(bumpfile_arg()),
         )
-        .subcommand(
-            Command::new("major")
-                .about("Increment major version")
-                .arg(bumpfile_arg()),
-        )
-        .subcommand(
-            Command::new("minor")
-                .about("Increment minor version")
-                .arg(bumpfile_arg()),
-        )
-        .subcommand(
-            Command::new("patch")
-                .about("Increment patch version")
-                .arg(bumpfile_arg()),
-        )
+        .subcommand(semver_mutate_cmd("major", "Increment major version"))
+        .subcommand(semver_mutate_cmd("minor", "Increment minor version"))
+        .subcommand(semver_mutate_cmd("patch", "Increment patch version"))
         .subcommand(
             Command::new("phase")
                 .about("Increment phase distance, or set phase name and reset distance")
