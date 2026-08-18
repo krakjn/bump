@@ -90,7 +90,9 @@ pub fn load_bumpfile(matches: &ArgMatches) -> Result<BumpFile, BumpError> {
 }
 
 fn git_cmd() -> ProcessCommand {
-    ProcessCommand::new("git")
+    let mut cmd = ProcessCommand::new("git");
+    cmd.arg("-P");
+    cmd
 }
 
 pub(crate) fn git_tag_exists(tag_name: &str) -> Result<bool, BumpError> {

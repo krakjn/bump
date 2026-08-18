@@ -34,27 +34,17 @@ fn bumpfile_arg() -> Arg {
         .help("Path to the configuration file")
 }
 
-fn if_changed_args() -> Vec<Arg> {
-    vec![
-        Arg::new("if-changed")
-            .long("if-changed")
-            .action(clap::ArgAction::SetTrue)
-            .group("if-changed-mode")
-            .help("Skip bump if the bumpfile directory did not change in the last commit"),
-        Arg::new("if-changed-since")
-            .long("if-changed-since")
-            .value_name("SHA")
-            .value_parser(clap::value_parser!(String))
-            .num_args(1)
-            .group("if-changed-mode")
-            .help("Skip bump if the bumpfile directory did not change since SHA"),
-    ]
-}
-
 fn semver_mutate_cmd(name: &'static str, about: &'static str) -> Command {
     Command::new(name)
         .about(about)
-        .args(if_changed_args())
+        .arg(Arg::new("if-changed-from")
+            .long("if-changed-from")
+            .value_name("TREEISH")
+            .value_parser(clap::value_parser!(String))
+            .allow_hyphen_values(true)
+            .num_args(1)
+            .help("Skip bump if the bumpfile directory did not change from TREEISH to HEAD"),
+        )
         .arg(bumpfile_arg())
 }
 

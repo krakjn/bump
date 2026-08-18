@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-# Behavior: --if-changed and --if-changed-since gate semver bumps.
+# Behavior: --if-changed-from TREEISH gates semver bumps.
 
 source "$(dirname "$0")/lib.sh"
 
@@ -27,7 +27,7 @@ git add other/change.txt
 git commit -qm "change other only"
 
 ver_before="$(bump p lib/bump.toml)"
-out="$(bump patch --if-changed lib/bump.toml 2>&1)"
+out="$(bump patch --if-changed-from HEAD~1 lib/bump.toml 2>&1)"
 echo "[changed/skip-unchanged]"
 echo "out: $out"
 if [[ "$out" != *"skipped"* ]]; then
@@ -55,7 +55,7 @@ git add lib/change.txt
 git commit -qm "change lib"
 
 ver_before="$(bump p lib/bump.toml)"
-out="$(bump patch --if-changed lib/bump.toml 2>&1)"
+out="$(bump patch --if-changed-from HEAD~1 lib/bump.toml 2>&1)"
 echo "[changed/bump-changed]"
 echo "out: $out"
 if [[ "$out" != *"bumped"* ]]; then
@@ -70,7 +70,7 @@ fi
 echo "ok"
 echo
 
-section "Custom since ref"
+section "Custom from ref"
 
 enter_workspace --git
 setup_monorepo_lib
@@ -83,24 +83,24 @@ git add other/change.txt
 git commit -qm "change other only"
 
 ver_before="$(bump p lib/bump.toml)"
-out="$(bump patch --if-changed-since "$LIB_CHANGE_SHA" lib/bump.toml 2>&1)"
-echo "[changed/since-lib-change]"
+out="$(bump patch --if-changed-from "$LIB_CHANGE_SHA" lib/bump.toml 2>&1)"
+echo "[changed/from-lib-change]"
 echo "out: $out"
 if [[ "$out" != *"skipped"* ]]; then
     echo "expected skipped (no lib changes since lib commit)"
     exit 1
 fi
 
-out="$(bump patch --if-changed-since HEAD~1 lib/bump.toml 2>&1)"
-echo "[changed/since-head-1]"
+out="$(bump patch --if-changed-from HEAD~1 lib/bump.toml 2>&1)"
+echo "[changed/from-head-1]"
 echo "out: $out"
 if [[ "$out" != *"skipped"* ]]; then
     echo "expected skipped on latest commit (other only)"
     exit 1
 fi
 
-out="$(bump patch --if-changed-since HEAD~2 lib/bump.toml 2>&1)"
-echo "[changed/since-head-2]"
+out="$(bump patch --if-changed-from HEAD~2 lib/bump.toml 2>&1)"
+echo "[changed/from-head-2]"
 echo "out: $out"
 if [[ "$out" != *"bumped"* ]]; then
     echo "expected bump (lib changed in range)"
@@ -114,15 +114,43 @@ fi
 echo "ok"
 echo
 
-section "Mutually exclusive flags"
+section "Compare from branch"
 
 enter_workspace --git
 setup_monorepo_lib
+git branch -m main
+git checkout -qb feature
+echo "other only" > other/branch.txt
+git add other/branch.txt
+git commit -qm "change other on feature"
 
-assert_fails \
-    "changed/both-flags" \
-    "if-changed" \
-    patch --if-changed --if-changed-since HEAD lib/bump.toml
+ver_before="$(bump p lib/bump.toml)"
+out="$(bump patch --if-changed-from main lib/bump.toml 2>&1)"
+echo "[changed/from-main]"
+echo "out: $out"
+if [[ "$out" != *"skipped"* ]]; then
+    echo "expected skipped (lib unchanged since main)"
+    exit 1
+fi
+
+echo "lib feature" > lib/feature.txt
+git add lib/feature.txt
+git commit -qm "change lib on feature"
+
+out="$(bump patch --if-changed-from main lib/bump.toml 2>&1)"
+echo "[changed/from-main-after-lib-change]"
+echo "out: $out"
+if [[ "$out" != *"bumped"* ]]; then
+    echo "expected bump (lib changed since main)"
+    exit 1
+fi
+ver_after="$(bump p lib/bump.toml)"
+if [[ "$ver_before" == "$ver_after" ]]; then
+    echo "expected version to change"
+    exit 1
+fi
+echo "ok"
+echo
 
 section "Root bumpfile watches repo"
 
@@ -135,7 +163,7 @@ echo "root change" > root.txt
 git add root.txt
 git commit -qm "change root"
 
-out="$(bump patch --if-changed 2>&1)"
+out="$(bump patch --if-changed-from HEAD~1 2>&1)"
 echo "[changed/root-bumpfile]"
 echo "out: $out"
 if [[ "$out" != *"bumped"* ]]; then
@@ -145,36 +173,20 @@ fi
 echo "ok"
 echo
 
-section "Root commit warns and bumps"
+section "Unknown ref fails"
 
 enter_workspace
 bump init >/dev/null
-bump meta --prefix "$PREFIX" >/dev/null
 git init -q
 git config user.email "bump-test@example.com"
 git config user.name "bump-test"
 git add bump.toml
 git commit -qm "init with bumpfile"
 
-ver_before="$(bump p)"
-out="$(bump patch --if-changed 2>&1)"
-echo "[changed/root-commit]"
-echo "out: $out"
-if [[ "$out" != *"no parent commit"* ]]; then
-    echo "expected no parent commit warning"
-    exit 1
-fi
-if [[ "$out" != *"bumped"* ]]; then
-    echo "expected bump despite no parent"
-    exit 1
-fi
-ver_after="$(bump p)"
-if [[ "$ver_before" == "$ver_after" ]]; then
-    echo "expected version to change"
-    exit 1
-fi
-echo "ok"
-echo
+assert_fails \
+    "changed/unknown-ref" \
+    "unknown git ref" \
+    patch --if-changed-from HEAD~1
 
 section "Requires git repository"
 
@@ -184,6 +196,6 @@ bump init >/dev/null
 assert_fails \
     "changed/not-git" \
     "Not a git repository" \
-    patch --if-changed
+    patch --if-changed-from HEAD
 
 echo "changed.sh: all tests passed."

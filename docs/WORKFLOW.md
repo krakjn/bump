@@ -90,20 +90,21 @@ git push origin HEAD --tags
 
 ## Conditional Bump (Monorepo)
 
-Place `bump.toml` at the module root (e.g. `lib/bump.toml` watches `lib/`). Use one of
-these mutually exclusive flags to skip the bump when the module directory did not change:
+Place `bump.toml` at the module root (e.g. `lib/bump.toml` watches `lib/`). Pass a git
+ref to compare against — bump runs only when files under that directory changed from
+the ref to `HEAD`:
 
 ```bash
-# Did the latest commit touch lib/?
-bump patch --if-changed lib/bump.toml
+# Changes on this branch since main?
+bump patch --if-changed-from main lib/bump.toml
 
-# Did anything since a ref touch lib/?
-bump patch --if-changed-since "$LAST_DEPLOY_SHA" lib/bump.toml
+# Changes in the latest commit only?
+bump patch --if-changed-from HEAD~1 lib/bump.toml
 
 bump update lib/Cargo.toml lib/bump.toml
 ```
 
-Both flags exit 0 when skipping (stderr warning only). Neither flag may be combined with the other.
+Exits 0 when skipping (stderr warning only).
 
 ## CI-Friendly Version Output
 
