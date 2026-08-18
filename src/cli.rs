@@ -34,6 +34,20 @@ fn bumpfile_arg() -> Arg {
         .help("Path to the configuration file")
 }
 
+fn semver_mutate_cmd(name: &'static str, about: &'static str) -> Command {
+    Command::new(name)
+        .about(about)
+        .arg(Arg::new("if-changed-from")
+            .long("if-changed-from")
+            .value_name("TREEISH")
+            .value_parser(clap::value_parser!(String))
+            .allow_hyphen_values(true)
+            .num_args(1)
+            .help("Skip bump if the bumpfile directory did not change from TREEISH to HEAD"),
+        )
+        .arg(bumpfile_arg())
+}
+
 fn print_args() -> Vec<Arg> {
     vec![
         Arg::new("only-prefix")
@@ -99,21 +113,9 @@ pub fn cli() -> Command {
                 .args(print_flags)
                 .arg(bumpfile_arg()),
         )
-        .subcommand(
-            Command::new("major")
-                .about("Increment major version")
-                .arg(bumpfile_arg()),
-        )
-        .subcommand(
-            Command::new("minor")
-                .about("Increment minor version")
-                .arg(bumpfile_arg()),
-        )
-        .subcommand(
-            Command::new("patch")
-                .about("Increment patch version")
-                .arg(bumpfile_arg()),
-        )
+        .subcommand(semver_mutate_cmd("major", "Increment major version"))
+        .subcommand(semver_mutate_cmd("minor", "Increment minor version"))
+        .subcommand(semver_mutate_cmd("patch", "Increment patch version"))
         .subcommand(
             Command::new("phase")
                 .about("Increment phase distance, or set phase name and reset distance")

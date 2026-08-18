@@ -17,6 +17,7 @@ SUITES=(
     cli
     print
     mutate
+    changed
     meta
     emit
     init

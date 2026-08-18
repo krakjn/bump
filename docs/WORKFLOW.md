@@ -88,6 +88,24 @@ bump tag app/component/bump.toml
 git push origin HEAD --tags
 ```
 
+## Conditional Bump (Monorepo)
+
+Place `bump.toml` at the module root (e.g. `lib/bump.toml` watches `lib/`). Pass a git
+ref to compare against — bump runs only when files under that directory changed from
+the ref to `HEAD`:
+
+```bash
+# Changes on this branch since main?
+bump patch --if-changed-from main lib/bump.toml
+
+# Changes in the latest commit only?
+bump patch --if-changed-from HEAD~1 lib/bump.toml
+
+bump update lib/Cargo.toml lib/bump.toml
+```
+
+Exits 0 when skipping (stderr warning only).
+
 ## CI-Friendly Version Output
 
 ```bash

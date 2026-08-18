@@ -1,9 +1,21 @@
 use crate::bumpfile;
+use crate::cmd::changed::{ChangedResult, path_changed, resolve_if_changed_from};
 use crate::cmd::{BumpError, BumpType, load_bumpfile};
 use clap::ArgMatches;
 
 pub fn mutate(matches: &ArgMatches, bump_type: BumpType) -> Result<(), BumpError> {
     let mut bumpfile = load_bumpfile(matches)?;
+
+    if let Some(from) = resolve_if_changed_from(matches) {
+        match path_changed(&bumpfile, from)? {
+            ChangedResult::Unchanged { path, from } => {
+                eprintln!("bump warning >> no changes under {path} from {from}; skipped");
+                return Ok(());
+            }
+            ChangedResult::Changed => {}
+        }
+    }
+
     let mut version = bumpfile.version()?;
 
     version.bump(&bump_type)?;
