@@ -40,11 +40,12 @@ irm https://raw.githubusercontent.com/krakjn/bump/main/install/get_bump.ps1 | ie
 
 ```bash
 bump init
+bump init --calver
 ```
 
 This creates a **BUMPFILE** (default `bump.toml`) in your current directory with sensible defaults. You can rename it to whatever you like.
 
-To use CalVer, set `mode = "calver"` under `[base]` in your bumpfile.
+`bump init` creates a SemVer bumpfile (with a commented `# epoch = 0` hint). Use `bump init --calver` to create a CalVer bumpfile seeded with today's UTC date.
 
 ## Breaking changes (v7 → v8)
 
@@ -92,6 +93,7 @@ Suffix output (`--with-suffix`, `--full`) requires a git repository.
 
 ```bash
 # Bump version numbers (updates BUMPFILE)
+bump epoch     # 0.65.3.0 -> 1.0.0.0 when epoch is set, clears phase
 bump major     # 1.0.0 -> 2.0.0, clears phase
 bump minor     # 1.0.0 -> 1.1.0, clears phase
 bump patch     # 1.0.0 -> 1.0.1, clears phase
@@ -109,7 +111,9 @@ bump phase beta   # switch phase, e.g. 1.1.0-beta.1
 ### CalVer Commands
 
 ```bash
-# Set [base].mode = "calver" in BUMPFILE, then:
+# Set [base].mode = "calver" in BUMPFILE, or:
+bump init --calver
+
 bump calendar [BUMPFILE]  # Updates to current date (e.g., 2026.02.25)
 # Same-day bumps automatically increment phase distance
 ```

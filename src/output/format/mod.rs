@@ -113,6 +113,7 @@ pub(crate) fn nested_pairs(fields: &Fields) -> Vec<(String, String)> {
     let key = |name: &str| Case::Snake.apply(name);
     vec![
         (key("prefix"), fields.version_prefix.clone()),
+        (key("epoch"), fields.version_epoch.to_string()),
         (key("major"), fields.version_major.to_string()),
         (key("minor"), fields.version_minor.to_string()),
         (key("patch"), fields.version_patch.to_string()),
@@ -177,11 +178,15 @@ mod tests {
             version_major: 1,
             version_minor: 0,
             version_patch: 0,
+            version_epoch: 0,
             version_phase: String::new(),
             version_phase_distance: 0,
             version_mode: VersionMode::Semver,
         };
-        let out = substitute("#define {emit_prefix}{case_string} \"{version_string}\"", &fields);
+        let out = substitute(
+            "#define {emit_prefix}{case_string} \"{version_string}\"",
+            &fields,
+        );
         assert_eq!(out, "#define APP_VERSION_STRING \"v-1.0.0\"");
     }
 
@@ -197,6 +202,7 @@ mod tests {
             base: Base {
                 mode: VersionMode::Semver,
                 delimiter: ".".to_string(),
+                epoch: None,
                 major: 0,
                 minor: Some(1),
                 patch: Some(0),

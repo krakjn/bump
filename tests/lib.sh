@@ -168,6 +168,25 @@ setup_semver_no_minor() {
     remove_base_keys bump.toml minor
 }
 
+setup_semver_epoch() {
+    local prefix="${1:-v-}"
+    setup_semver "$prefix"
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        sed -i '' '/^major = /i\
+epoch = 0
+' bump.toml
+        sed -i '' 's/^major = .*/major = 1/' bump.toml
+        sed -i '' 's/^minor = .*/minor = 0/' bump.toml
+        sed -i '' 's/^patch = .*/patch = 0/' bump.toml
+    else
+        sed -i '/^major = /i epoch = 0' bump.toml
+        sed -i 's/^major = .*/major = 1/' bump.toml
+        sed -i 's/^minor = .*/minor = 0/' bump.toml
+        sed -i 's/^patch = .*/patch = 0/' bump.toml
+    fi
+    refresh_metadata
+}
+
 setup_calver_year_only() {
     setup_calver
     remove_base_keys bump.toml month day

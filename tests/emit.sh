@@ -48,6 +48,7 @@ expected_json() {
 {
   "${root}": {
     "prefix": "${PREFIX}",
+    "epoch": "0",
     "major": "0",
     "minor": "1",
     "patch": "0",
@@ -65,6 +66,7 @@ expected_toml() {
     cat <<EOF
 [${root}]
 prefix = "${PREFIX}"
+epoch = "0"
 major = "0"
 minor = "1"
 patch = "0"
@@ -80,6 +82,7 @@ expected_yaml() {
     cat <<EOF
 ${root}:
   prefix: ${PREFIX}
+  epoch: 0
   major: 0
   minor: 1
   patch: 0

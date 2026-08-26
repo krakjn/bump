@@ -49,11 +49,23 @@ bump phase beta       # e.g., 1.4.0-beta.1
 bump minor            # e.g., 1.4.0-beta.1 -> 1.5.0
 ```
 
-## CalVer Workflow
+## Epoch Workflow
 
-Set `mode = "calver"` in your bumpfile first, then:
+Add `epoch` to `[base]` in your bumpfile (or uncomment the hint from `bump init`):
 
 ```bash
+# epoch=0, major=1, minor=0, patch=0 prints as 0.1.0.0
+bump major            # e.g., 0.1.0.0 -> 0.2.0.0
+bump epoch            # e.g., 0.65.3.0 -> 1.0.0.0
+```
+
+## CalVer Workflow
+
+Initialize or set `mode = "calver"` in your bumpfile, then:
+
+```bash
+bump init --calver
+# or set mode = "calver" manually, then:
 bump calendar
 ```
 

@@ -26,6 +26,10 @@ if [[ ! -f bump.toml ]]; then
     echo "bump.toml was not created"
     exit 1
 fi
+if ! grep -q '# epoch = 0' bump.toml; then
+    echo "expected commented epoch hint in default bump.toml"
+    exit 1
+fi
 assert_eq "init/default/print" "v0.1.0" p
 echo "ok"
 echo
@@ -56,6 +60,24 @@ assert_fails \
 echo "[init/force-overwrite]"
 bump init --force >/dev/null
 assert_eq "init/force-overwrite/print" "v0.1.0" p
+echo "ok"
+echo
+
+section "init --calver"
+
+CALVER_TODAY="$(today_calver_base)"
+
+echo "[init/calver]"
+out="$(bump init --calver calver/bump.toml)"
+if [[ "$out" != *"initialized"*calver/bump.toml* ]]; then
+    echo "unexpected calver init message: $out"
+    exit 1
+fi
+if [[ ! -f calver/bump.toml ]]; then
+    echo "calver bumpfile was not created"
+    exit 1
+fi
+assert_eq "init/calver/print" "$CALVER_TODAY" p calver/bump.toml
 echo "ok"
 echo
 

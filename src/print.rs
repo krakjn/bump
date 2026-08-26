@@ -241,29 +241,22 @@ fn format_component(version: &Version, n: u32) -> String {
 }
 
 fn base(version: &Version) -> String {
-    match (version.base.minor, version.base.patch) {
-        (Some(minor), Some(patch)) => format!(
-            "{}{}{}{}{}",
-            version.base.major,
-            version.base.delimiter,
-            format_component(version, minor),
-            version.base.delimiter,
-            format_component(version, patch),
-        ),
-        (Some(minor), None) => format!(
-            "{}{}{}",
-            version.base.major,
-            version.base.delimiter,
-            format_component(version, minor),
-        ),
-        (None, Some(patch)) => format!(
-            "{}{}{}",
-            version.base.major,
-            version.base.delimiter,
-            format_component(version, patch),
-        ),
-        _ => format!("{}", version.base.major),
+    let d = &version.base.delimiter;
+    let mut parts: Vec<String> = Vec::new();
+    if let Some(epoch) = version.base.epoch {
+        parts.push(format_component(version, epoch));
     }
+    parts.push(format_component(version, version.base.major));
+    match (version.base.minor, version.base.patch) {
+        (Some(minor), Some(patch)) => {
+            parts.push(format_component(version, minor));
+            parts.push(format_component(version, patch));
+        }
+        (Some(minor), None) => parts.push(format_component(version, minor)),
+        (None, Some(patch)) => parts.push(format_component(version, patch)),
+        (None, None) => {}
+    }
+    parts.join(d)
 }
 
 fn phase(version: &Version) -> String {
@@ -313,6 +306,7 @@ mod tests {
             base: Base {
                 mode: VersionMode::Semver,
                 delimiter: ".".to_string(),
+                epoch: None,
                 major: 0,
                 minor: Some(1),
                 patch: Some(0),
@@ -335,6 +329,38 @@ mod tests {
                 position: LabelPosition::AfterBase,
             },
         }
+    }
+
+    #[test]
+    fn base_with_epoch_prepends_component() {
+        let mut v = test_version();
+        v.base.epoch = Some(0);
+        v.base.major = 1;
+        v.base.minor = Some(0);
+        v.base.patch = Some(0);
+        let out = to_string(
+            &v,
+            &PrintOptions {
+                only_base: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(out, "0.1.0.0");
+    }
+
+    #[test]
+    fn base_without_epoch_unchanged() {
+        let v = test_version();
+        let out = to_string(
+            &v,
+            &PrintOptions {
+                only_base: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(out, "0.1.0");
     }
 
     #[test]

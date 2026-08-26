@@ -5,8 +5,9 @@ use clap::ArgMatches;
 pub fn init(matches: &ArgMatches) -> Result<(), BumpError> {
     let bumpfile_path = matches.get_one::<String>("bumpfile").unwrap();
     let force = matches.get_flag("force");
+    let calver = matches.get_flag("calver");
     let filepath = resolve_path(bumpfile_path);
-    let bumpfile = BumpFile::create(&filepath, force)?;
+    let bumpfile = BumpFile::create(&filepath, force, calver)?;
     let version = bumpfile.version()?;
     println!(
         "{}",

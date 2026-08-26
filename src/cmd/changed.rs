@@ -1,5 +1,7 @@
 use crate::bumpfile::BumpFile;
-use crate::cmd::{BumpError, git_diff_name_only, git_ref_exists, is_git_repository, repo_relative_watch_dir};
+use crate::cmd::{
+    BumpError, git_diff_name_only, git_ref_exists, is_git_repository, repo_relative_watch_dir,
+};
 
 pub enum ChangedResult {
     Changed,

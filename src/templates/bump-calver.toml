@@ -5,18 +5,17 @@
 #
 # https://github.com/krakjn/bump
 
-prefix = "v"
+prefix = ""
 
 # NOTE: some fields are modified by bump
 #   - mode: "semver" or "calver"
-#   - epoch|minor|patch: optional, can be removed if not needed
+#   - month|day: optional, can be removed if not needed
 [base]
-mode = "semver"
+mode = "calver"
 delimiter = "."
-# epoch = 0
-major = 0
-minor = 1
-patch = 0
+year = {year}
+month = {month}
+day = {day}
 
 [phase]
 separator = "-"

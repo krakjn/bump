@@ -37,13 +37,14 @@ fn bumpfile_arg() -> Arg {
 fn semver_mutate_cmd(name: &'static str, about: &'static str) -> Command {
     Command::new(name)
         .about(about)
-        .arg(Arg::new("if-changed-from")
-            .long("if-changed-from")
-            .value_name("TREEISH")
-            .value_parser(clap::value_parser!(String))
-            .allow_hyphen_values(true)
-            .num_args(1)
-            .help("Skip bump if the bumpfile directory did not change from TREEISH to HEAD"),
+        .arg(
+            Arg::new("if-changed-from")
+                .long("if-changed-from")
+                .value_name("TREEISH")
+                .value_parser(clap::value_parser!(String))
+                .allow_hyphen_values(true)
+                .num_args(1)
+                .help("Skip bump if the bumpfile directory did not change from TREEISH to HEAD"),
         )
         .arg(bumpfile_arg())
 }
@@ -113,6 +114,7 @@ pub fn cli() -> Command {
                 .args(print_flags)
                 .arg(bumpfile_arg()),
         )
+        .subcommand(semver_mutate_cmd("epoch", "Increment epoch version"))
         .subcommand(semver_mutate_cmd("major", "Increment major version"))
         .subcommand(semver_mutate_cmd("minor", "Increment minor version"))
         .subcommand(semver_mutate_cmd("patch", "Increment patch version"))
@@ -201,6 +203,12 @@ pub fn cli() -> Command {
         .subcommand(
             Command::new("init")
                 .about("Initialize a new version file with default values")
+                .arg(
+                    Arg::new("calver")
+                        .long("calver")
+                        .action(clap::ArgAction::SetTrue)
+                        .help("Initialize with calendar versioning (CalVer) defaults"),
+                )
                 .arg(
                     Arg::new("force")
                         .long("force")

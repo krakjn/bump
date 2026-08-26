@@ -1,6 +1,7 @@
 use crate::cmd::{BumpError, ensure_directory_exists};
 use crate::print::{self, PrintOptions};
 use crate::version::{Version, VersionMode};
+use chrono::Datelike;
 use std::{
     fmt, fs, io,
     path::{Path, PathBuf},
@@ -54,7 +55,7 @@ fn set<V: Into<Value>>(
     Ok(())
 }
 
-const SEMVER_KEYS: &[&str] = &["major", "minor", "patch"];
+const SEMVER_KEYS: &[&str] = &["epoch", "major", "minor", "patch"];
 const CALVER_KEYS: &[&str] = &["year", "month", "day"];
 
 fn present_keys<'a>(base: &Table, keys: &'a [&str]) -> Vec<&'a str> {
@@ -108,6 +109,7 @@ fn write_base(doc: &mut DocumentMut, version: &Version, path: &Path) -> Result<(
 
     match version.base.mode {
         VersionMode::Calver => {
+            base.remove("epoch");
             base.remove("major");
             base.remove("minor");
             base.remove("patch");
@@ -119,6 +121,7 @@ fn write_base(doc: &mut DocumentMut, version: &Version, path: &Path) -> Result<(
             base.remove("year");
             base.remove("month");
             base.remove("day");
+            set_optional_u32(base, "epoch", version.base.epoch, path, "base")?;
             set_required_u32(base, "major", version.base.major, path, "base")?;
             set_optional_u32(base, "minor", version.base.minor, path, "base")?;
             set_optional_u32(base, "patch", version.base.patch, path, "base")?;
@@ -224,7 +227,7 @@ impl BumpFile {
         })
     }
 
-    pub fn create(path: impl AsRef<Path>, force: bool) -> Result<Self, BumpError> {
+    pub fn create(path: impl AsRef<Path>, force: bool, calver: bool) -> Result<Self, BumpError> {
         let path = path.as_ref();
         ensure_directory_exists(path)?;
 
@@ -235,15 +238,29 @@ impl BumpFile {
             )));
         }
 
-        let template = include_str!("templates/bump.toml");
+        let now = chrono::Utc::now();
+        let year = now.format("%Y").to_string();
+        let month = now.month().to_string();
+        let day = now.day().to_string();
+        let template = if calver {
+            include_str!("templates/bump-calver.toml")
+        } else {
+            include_str!("templates/bump.toml")
+        };
         let template_version: Version = {
-            let content = template.replace("{timestamp}", INIT_TEMPLATE_TIMESTAMP);
+            let content = template
+                .replace("{timestamp}", INIT_TEMPLATE_TIMESTAMP)
+                .replace("{year}", &year)
+                .replace("{month}", &month)
+                .replace("{day}", &day);
             toml::from_str(&content).expect("init template must deserialize")
         };
-        let current_timestamp = chrono::Utc::now()
-            .format(&template_version.timestamp.format)
-            .to_string();
-        let content = template.replace("{timestamp}", &current_timestamp);
+        let current_timestamp = now.format(&template_version.timestamp.format).to_string();
+        let content = template
+            .replace("{timestamp}", &current_timestamp)
+            .replace("{year}", &year)
+            .replace("{month}", &month)
+            .replace("{day}", &day);
 
         fs::write(path, &content).map_err(BumpError::IoError)?;
         let doc = content

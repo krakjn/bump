@@ -22,6 +22,7 @@ use std::{
 };
 
 pub enum BumpType {
+    Epoch,
     Major,
     Minor,
     Patch,

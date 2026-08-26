@@ -84,6 +84,10 @@ pub struct Base {
     pub mode: VersionMode,
     pub delimiter: String,
 
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub epoch: Option<u32>,
+
     #[serde(alias = "year")]
     pub major: u32,
 
@@ -145,6 +149,19 @@ impl Version {
     pub fn bump(&mut self, bump_type: &BumpType) -> Result<(), BumpError> {
         let now = chrono::Utc::now();
         match bump_type {
+            BumpType::Epoch => {
+                self.right_mode(VersionMode::Semver)?;
+                if self.base.epoch.is_none() {
+                    return Err(BumpError::LogicError(
+                        "Operation only valid when version.epoch is set".to_string(),
+                    ));
+                }
+                self.base.epoch = self.base.epoch.map(|e| e + 1);
+                self.base.major = 0;
+                self.base.minor = self.base.minor.map(|_| 0);
+                self.base.patch = self.base.patch.map(|_| 0);
+                self.clear_phase();
+            }
             BumpType::Major => {
                 self.right_mode(VersionMode::Semver)?;
                 self.base.major += 1;
@@ -216,6 +233,7 @@ mod tests {
             base: Base {
                 mode: VersionMode::Semver,
                 delimiter: ".".to_string(),
+                epoch: None,
                 major: 0,
                 minor: Some(1),
                 patch: Some(0),
@@ -238,6 +256,31 @@ mod tests {
                 position: LabelPosition::AfterBase,
             },
         }
+    }
+
+    #[test]
+    fn bump_epoch_increments_and_zeros_lower_components() {
+        let mut v = test_version();
+        v.base.epoch = Some(0);
+        v.base.major = 65;
+        v.base.minor = Some(3);
+        v.base.patch = Some(1);
+        v.phase.name = "rc".to_string();
+        v.phase.distance = 2;
+        v.bump(&BumpType::Epoch).unwrap();
+        assert_eq!(v.base.epoch, Some(1));
+        assert_eq!(v.base.major, 0);
+        assert_eq!(v.base.minor, Some(0));
+        assert_eq!(v.base.patch, Some(0));
+        assert_eq!(v.phase.distance, 0);
+        assert!(v.phase.name.is_empty());
+    }
+
+    #[test]
+    fn bump_epoch_requires_epoch_key() {
+        let mut v = test_version();
+        let err = v.bump(&BumpType::Epoch).unwrap_err();
+        assert!(err.to_string().contains("version.epoch is set"));
     }
 
     #[test]

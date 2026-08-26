@@ -21,6 +21,7 @@ fn main() -> ExitCode {
     let matches = cli::cli().get_matches();
     match matches.subcommand() {
         Some(("print", sub_matches)) => egress(print::print(sub_matches)),
+        Some(("epoch", sub_matches)) => egress(cmd::mutate(sub_matches, BumpType::Epoch)),
         Some(("major", sub_matches)) => egress(cmd::mutate(sub_matches, BumpType::Major)),
         Some(("minor", sub_matches)) => egress(cmd::mutate(sub_matches, BumpType::Minor)),
         Some(("patch", sub_matches)) => egress(cmd::mutate(sub_matches, BumpType::Patch)),

@@ -19,10 +19,11 @@ prefix = "v"
 
 # NOTE: some fields are modified by bump
 #   - mode: "semver" or "calver"
-#   - minor|patch: optional, can be removed if not needed
+#   - epoch|minor|patch: optional, can be removed if not needed
 [base]
 mode = "semver"
 delimiter = "."
+# epoch = 0
 major = 0
 minor = 1
 patch = 0
@@ -68,8 +69,8 @@ position = "after-base"
 
 - `mode`: `semver` or `calver`.
 - `delimiter`: separator for base components.
-- `major`, `minor`, `patch`: numeric components in SemVer mode.
-- `minor` and `patch` are optional.
+- `epoch`, `major`, `minor`, `patch`: numeric components in SemVer mode.
+- `epoch`, `minor`, and `patch` are optional.
 
 For compatibility, `year`, `month`, and `day` are accepted as aliases for
 `major`, `minor`, and `patch` when loading.
@@ -100,10 +101,11 @@ For compatibility, `year`, `month`, and `day` are accepted as aliases for
 
 ### SemVer mode
 
-- Supported bump ops: `major`, `minor`, `patch`, `phase`.
+- Supported bump ops: `epoch`, `major`, `minor`, `patch`, `phase`.
 - `calendar` is rejected.
-- `major`, `minor`, and `patch` clear the phase (promotion).
-- Base format is `<major><delimiter><minor><delimiter><patch>`.
+- Formal bumps (`epoch`, `major`, `minor`, `patch`) clear the phase (promotion).
+- Base format is `<major>[<delimiter><minor>[<delimiter><patch>]]`.
+- When `[base].epoch` is set, it is prepended: `<epoch><delimiter><major>[...]`.
 
 ### CalVer mode
 
@@ -115,7 +117,7 @@ For compatibility, `year`, `month`, and `day` are accepted as aliases for
 
 When writing back to disk, keys are normalized to match `base.mode`.
 
-- If `mode = "semver"`, stored keys become `major/minor/patch`.
+- If `mode = "semver"`, stored keys become `epoch/major/minor/patch` (epoch only when set).
 - If `mode = "calver"`, stored keys become `year/month/day`.
 
 Additional safety behavior:

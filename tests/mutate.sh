@@ -191,4 +191,30 @@ assert_base_has_key bump.toml year
 assert_base_has_key bump.toml month
 assert_base_lacks_key bump.toml day
 
+section "Epoch bumps"
+
+setup_semver_epoch "$PREFIX"
+
+assert_eq "mutate/epoch/print" "${PREFIX}0.1.0.0" p
+
+bump major >/dev/null
+refresh_metadata
+assert_eq "mutate/epoch/major" "${PREFIX}0.2.0.0" p
+
+bump epoch >/dev/null
+refresh_metadata
+assert_eq "mutate/epoch/bump" "${PREFIX}1.0.0.0" p
+
+setup_semver "$PREFIX"
+assert_fails \
+    "mutate/epoch-without-key" \
+    "version.epoch is set" \
+    epoch
+
+setup_calver
+assert_fails \
+    "mutate/epoch-on-calver" \
+    "base.mode = 'semver'" \
+    epoch
+
 echo "All mutate tests passed."
