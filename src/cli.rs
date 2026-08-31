@@ -1,9 +1,9 @@
 use crate::output::{Case, Format};
 use crate::version::SuffixMode;
+use crate::print::PrintValue;
 use clap::builder::StyledStr;
 use clap::builder::styling::{AnsiColor, Styles};
 use clap::{Arg, Command, value_parser};
-use clap_complete::aot::Shell;
 use std::fmt::Write;
 
 const HELP_STYLES: Styles = Styles::styled()
@@ -34,70 +34,84 @@ fn bumpfile_arg() -> Arg {
         .help("Path to the configuration file")
 }
 
-fn semver_mutate_cmd(name: &'static str, about: &'static str) -> Command {
-    Command::new(name)
-        .about(about)
-        .arg(Arg::new("if-changed-from")
-            .long("if-changed-from")
-            .value_name("TREEISH")
-            .value_parser(clap::value_parser!(String))
-            .allow_hyphen_values(true)
-            .num_args(1)
-            .help("Skip bump if the bumpfile directory did not change from TREEISH to HEAD"),
-        )
+fn if_changed_from_arg() -> Arg {
+    Arg::new("if-changed-from")
+        .long("if-changed-from")
+        .value_name("TREEISH")
+        .value_parser(clap::value_parser!(String))
+        .allow_hyphen_values(true)
+        .num_args(1)
+        .help("Skip bump if the bumpfile directory did not change from TREEISH to HEAD")
+}
+
+fn base_cmd(name: impl Into<String>, about: impl Into<String>) -> Command {
+    Command::new(name.into())
+        .about(about.into())
+        .arg(if_changed_from_arg())
         .arg(bumpfile_arg())
+}
+
+pub fn build_base_cmds(base_components: Vec<(String, u16)>) -> Vec<Command> {
+    base_components.into_iter().map(|(name, _value)| {
+        base_cmd(name.clone(), format!("Increment '{}' version", name))
+    }).collect()
 }
 
 fn print_args() -> Vec<Arg> {
     vec![
-        Arg::new("only-prefix")
-            .long("only-prefix")
-            .action(clap::ArgAction::SetTrue)
-            .group("print-exclusive")
-            .help("Print [prefix]"),
-        Arg::new("only-phase")
-            .long("only-phase")
-            .action(clap::ArgAction::SetTrue)
-            .group("print-exclusive")
-            .help("Print [phase]"),
-        Arg::new("only-base")
-            .long("only-base")
-            .action(clap::ArgAction::SetTrue)
-            .group("print-exclusive")
-            .help("Print [base]"),
-        Arg::new("no-prefix")
-            .long("no-prefix")
-            .action(clap::ArgAction::SetTrue)
-            .help("Print [base][phase]"),
-        Arg::new("no-phase")
-            .long("no-phase")
-            .action(clap::ArgAction::SetTrue)
-            .help("Print [prefix][base]"),
-        Arg::new("with-suffix")
-            .long("with-suffix")
-            .action(clap::ArgAction::SetTrue)
-            .help("Print [prefix][base][phase][suffix]"),
-        Arg::new("with-timestamp")
-            .long("with-timestamp")
-            .action(clap::ArgAction::SetTrue)
-            .help("Print [prefix][base][phase][timestamp]"),
         Arg::new("full")
             .long("full")
             .action(clap::ArgAction::SetTrue)
-            .help("Print full output; overrides all print flags except --with-label"),
-        Arg::new("with-label")
-            .long("with-label")
-            .value_name("LABEL")
-            .allow_hyphen_values(true)
-            .value_parser(clap::value_parser!(String))
+            .display_order(1)
+            .help("Print full version (all components)"),
+        Arg::new("semver")
+            .long("semver")
+            .action(clap::ArgAction::SetTrue)
+            .display_order(2)
+            .help("Print first three base components (semver-compatible)"),
+        Arg::new("with")
+            .long("with")
+            .value_name("OPTION")
+            .value_parser(value_parser!(PrintValue))
+            .action(clap::ArgAction::Append)
+            .display_order(3)
+            .help("Print [OPTION [, OPTION2, ..]]"),
+        Arg::new("without")
+            .long("without")
+            .value_name("OPTION")
+            .value_parser(value_parser!(PrintValue))
+            .action(clap::ArgAction::Append)
+            .display_order(4)
+            .help("Print [OPTION [, OPTION2, ..]]"),
+        Arg::new("only")
+            .long("only")
+            .value_name("OPTION")
+            .value_parser(value_parser!(PrintValue))
             .num_args(1)
+            .display_order(5)
+            .help("Print OPTION"),
+        Arg::new("label")
+            .long("label")
+            .value_name("LABEL")
+            .value_parser(clap::value_parser!(String))
+            .allow_hyphen_values(true)
+            .num_args(1)
+            .display_order(6)
             .help("Inject LABEL at [label].position (not persisted)"),
     ]
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn cli() -> Command {
+pub fn cli(base_components: Vec<(String, u16)>) -> Command {
     let print_flags = print_args();
+    
+    let base_cmds = if base_components.is_empty() {
+        vec![
+            base_cmd("_base_", "Increment '_base_' component, NOTE: can't find [base] keys"),
+        ]
+    } else {
+        build_base_cmds(base_components)
+    };
 
     Command::new("bump")
         .styles(HELP_STYLES)
@@ -113,12 +127,11 @@ pub fn cli() -> Command {
                 .args(print_flags)
                 .arg(bumpfile_arg()),
         )
-        .subcommand(semver_mutate_cmd("major", "Increment major version"))
-        .subcommand(semver_mutate_cmd("minor", "Increment minor version"))
-        .subcommand(semver_mutate_cmd("patch", "Increment patch version"))
+        .subcommands(base_cmds)
         .subcommand(
             Command::new("phase")
                 .about("Increment phase distance, or set phase name and reset distance")
+                .arg(if_changed_from_arg())
                 .arg(
                     Arg::new("name")
                         .value_name("NAME")
@@ -128,12 +141,6 @@ pub fn cli() -> Command {
                         .allow_hyphen_values(true)
                         .help("Phase name to set (omit to increment distance)"),
                 )
-                .arg(bumpfile_arg()),
-        )
-        .subcommand(
-            Command::new("calendar")
-                .about("Update version based on current calendar date")
-                .alias("cal")
                 .arg(bumpfile_arg()),
         )
         .subcommand(
@@ -233,16 +240,5 @@ pub fn cli() -> Command {
                         .help("File type bump knows how to update"),
                 )
                 .arg(bumpfile_arg()),
-        )
-        .subcommand(
-            Command::new("completion")
-                .about("Generate shell completion script")
-                .arg(
-                    Arg::new("shell")
-                        .value_name("SHELL")
-                        .value_parser(value_parser!(Shell))
-                        .required(true)
-                        .help("Output shell completion script for SHELL"),
-                ),
         )
 }

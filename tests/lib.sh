@@ -5,18 +5,22 @@
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FIXTURES="$ROOT/tests/fixtures"
 
-# Resolve BUMP_BIN to an absolute path so suites can cd into temp workspaces.
+# Prefer an explicit binary, then debug, then release.
 if [[ -n "${BUMP_BIN:-}" ]]; then
     if [[ "$BUMP_BIN" != /* ]]; then
         BUMP_BIN="$ROOT/$BUMP_BIN"
     fi
+elif [[ -n "${CARGO_TARGET_DIR:-}" && -x "${CARGO_TARGET_DIR}/debug/bump" ]]; then
+    BUMP_BIN="${CARGO_TARGET_DIR}/debug/bump"
+elif [[ -x "$ROOT/target/debug/bump" ]]; then
+    BUMP_BIN="$ROOT/target/debug/bump"
 elif [[ -n "${CARGO_TARGET_DIR:-}" && -x "${CARGO_TARGET_DIR}/release/bump" ]]; then
     BUMP_BIN="${CARGO_TARGET_DIR}/release/bump"
 elif [[ -x "$ROOT/target/release/bump" ]]; then
     BUMP_BIN="$ROOT/target/release/bump"
 else
-    echo "bump binary not found; build with: cargo build --release" >&2
-    echo "or set BUMP_BIN to the release artifact" >&2
+    echo "bump binary not found; build with: cargo build" >&2
+    echo "or set BUMP_BIN to the artifact" >&2
     exit 1
 fi
 
@@ -56,7 +60,6 @@ init_git() {
     git init -q
     git config user.email "bump-test@example.com"
     git config user.name "bump-test"
-    # Detach from any template/hooks noise; one commit so HEAD exists.
     echo "# bump test" > README.md
     git add README.md
     git commit -qm "init"
@@ -75,28 +78,8 @@ refresh_metadata() {
     fi
 }
 
-setup_semver() {
-    local prefix="${1:-v-}"
-    if [[ -f bump.toml ]]; then
-        bump init --force >/dev/null
-    else
-        bump init >/dev/null
-    fi
-    bump meta --prefix "$prefix" >/dev/null
-    refresh_metadata
-}
-
-setup_calver() {
-    cat > bump.toml <<'EOF'
-prefix = ""
-
-[base]
-mode = "calver"
-delimiter = "."
-year = 2020
-month = 1
-day = 1
-
+common_tables() {
+    cat <<'EOF'
 [phase]
 separator = "-"
 name = ""
@@ -114,6 +97,69 @@ last = "1970-01-01 00:00:00 UTC"
 [label]
 position = "after-base"
 EOF
+}
+
+setup_semver() {
+    local prefix="${1:-v-}"
+    cat > bump.toml <<EOF
+prefix = "${prefix}"
+
+[base]
+delimiter = "."
+major = 0
+minor = 1
+patch = 0
+
+$(common_tables)
+EOF
+    refresh_metadata
+}
+
+setup_calver() {
+    local prefix="${1:-}"
+    cat > bump.toml <<EOF
+prefix = "${prefix}"
+
+[base]
+delimiter = "."
+year = 2020
+month = 1
+day = 1
+
+$(common_tables)
+EOF
+    refresh_metadata
+}
+
+setup_custom() {
+    local prefix="${1:-v-}"
+    cat > bump.toml <<EOF
+prefix = "${prefix}"
+
+[base]
+delimiter = "."
+alpha = 2
+beta = 9
+
+$(common_tables)
+EOF
+    refresh_metadata
+}
+
+setup_mixed() {
+    local prefix="${1:-v}"
+    cat > bump.toml <<EOF
+prefix = "${prefix}"
+
+[base]
+delimiter = "."
+year = 2020
+alpha = 2
+month = 1
+beta = 9
+
+$(common_tables)
+EOF
     refresh_metadata
 }
 
@@ -129,53 +175,6 @@ set_label_position() {
 
 today_calver_base() {
     date -u +"%Y.%m.%d"
-}
-
-# Remove one or more keys from the [base] table (semver or calver field names).
-remove_base_keys() {
-    local file="${1:-bump.toml}"
-    shift
-    local key pattern
-    pattern=""
-    for key in "$@"; do
-        if [[ -n "$pattern" ]]; then
-            pattern="${pattern}; "
-        fi
-        pattern="${pattern}/^${key} = /d"
-    done
-    if [[ "$(uname -s)" == "Darwin" ]]; then
-        sed -i '' "$pattern" "$file"
-    else
-        sed -i "$pattern" "$file"
-    fi
-}
-
-setup_semver_major_only() {
-    local prefix="${1:-v-}"
-    setup_semver "$prefix"
-    remove_base_keys bump.toml minor patch
-}
-
-setup_semver_no_patch() {
-    local prefix="${1:-v-}"
-    setup_semver "$prefix"
-    remove_base_keys bump.toml patch
-}
-
-setup_semver_no_minor() {
-    local prefix="${1:-v-}"
-    setup_semver "$prefix"
-    remove_base_keys bump.toml minor
-}
-
-setup_calver_year_only() {
-    setup_calver
-    remove_base_keys bump.toml month day
-}
-
-setup_calver_no_day() {
-    setup_calver
-    remove_base_keys bump.toml day
 }
 
 # --- asserts -----------------------------------------------------------------
@@ -363,19 +362,6 @@ assert_warns() {
     echo
 }
 
-# Back-compat name used by schema suite: warn on patch of a fixture copy.
-assert_warns_on_bump() {
-    local name="$1"
-    local warn_pattern="$2"
-    local bumpfile="$3"
-    local tmp
-
-    tmp="$(mktemp)"
-    cp "$bumpfile" "$tmp"
-    assert_warns "$name" "$warn_pattern" patch "$tmp"
-    rm -f "$tmp"
-}
-
 base_section() {
     awk '/^\[base\]/{flag=1; next} /^\[/{flag=0} flag' "$1"
 }
@@ -400,63 +386,4 @@ assert_base_lacks_key() {
         base_section "$file"
         exit 1
     fi
-}
-
-assert_bump_rewrites_keys() {
-    local name="$1"
-    local bumpfile="$2"
-    local bump_cmd="$3"
-    local warn_pattern="$4"
-    shift 4
-    local want_keys=("$@")
-    local tmp
-    local stderr
-    local status=0
-    local key
-    local err
-
-    tmp="$(mktemp)"
-    err="$(mktemp)"
-    cp "$bumpfile" "$tmp"
-
-    echo "[$name]"
-    set +e
-    bump "$bump_cmd" "$tmp" >/dev/null 2>"$err"
-    stderr="$(cat "$err")"
-    status=$?
-    set -e
-    rm -f "$err"
-
-    if [[ "$status" -ne 0 ]]; then
-        echo "bump failed"
-        cat "$tmp"
-        exit 1
-    fi
-
-    if [[ "$stderr" != *"$warn_pattern"* ]]; then
-        echo "expected warning containing: $warn_pattern"
-        echo "stderr: $stderr"
-        exit 1
-    fi
-
-    for key in "${want_keys[@]}"; do
-        assert_base_has_key "$tmp" "$key"
-    done
-
-    case "${want_keys[0]}" in
-        major|minor|patch)
-            for key in year month day; do
-                assert_base_lacks_key "$tmp" "$key"
-            done
-            ;;
-        year|month|day)
-            for key in major minor patch; do
-                assert_base_lacks_key "$tmp" "$key"
-            done
-            ;;
-    esac
-
-    rm -f "$tmp"
-    echo "ok"
-    echo
 }

@@ -2,14 +2,13 @@ mod changed;
 mod emit;
 mod init;
 mod meta;
-mod mutate;
+pub mod mutate;
 mod tag;
 mod update;
 
 pub use emit::emit;
 pub use init::init;
 pub use meta::meta;
-pub use mutate::{bump_type_from_phase, mutate};
 pub use tag::tag;
 pub use update::update;
 
@@ -20,15 +19,6 @@ use std::{
     path::{Path, PathBuf},
     process::Command as ProcessCommand,
 };
-
-pub enum BumpType {
-    Major,
-    Minor,
-    Patch,
-    PhaseSet(String),
-    PhaseIncrement,
-    Calendar,
-}
 
 #[derive(Debug)]
 pub enum BumpError {
@@ -86,10 +76,10 @@ pub fn load_bumpfile(matches: &ArgMatches) -> Result<BumpFile, BumpError> {
     let version_file_path = matches
         .get_one::<String>("bumpfile")
         .expect("BUMPFILE not provided");
-    BumpFile::load(resolve_path(version_file_path))
+    BumpFile::parse(resolve_path(version_file_path))
 }
 
-fn git_cmd() -> ProcessCommand {
+pub(crate) fn git_cmd() -> ProcessCommand {
     let mut cmd = ProcessCommand::new("git");
     cmd.arg("-P");
     cmd

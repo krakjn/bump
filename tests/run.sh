@@ -2,15 +2,19 @@
 
 set -euo pipefail
 
-# Single entrypoint for bump behavior tests.
-# Requires a release binary (set BUMP_BIN, or use target/release/bump).
+# Single entrypoint for bump tests: unit tests first, then CLI contracts.
+# Default binary is debug. Set BUMP_BIN to skip cargo test (foreign artifact / CI).
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-# Resolve relative BUMP_BIN against the repo root before suites cd away.
 if [[ -n "${BUMP_BIN:-}" && "$BUMP_BIN" != /* ]]; then
     export BUMP_BIN="$ROOT/$BUMP_BIN"
+fi
+
+if [[ -z "${BUMP_BIN:-}" ]]; then
+    cargo test
+    cargo build
 fi
 
 SUITES=(
@@ -24,7 +28,6 @@ SUITES=(
     tag
     update
     schema
-    completion
 )
 
 for suite in "${SUITES[@]}"; do

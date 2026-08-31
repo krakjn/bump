@@ -1,34 +1,11 @@
-use crate::cmd::{BumpError, BumpType};
+use crate::cmd::BumpError;
 use chrono::Datelike;
-use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::str::FromStr;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum VersionMode {
-    Semver,
-    Calver,
-}
-
-impl VersionMode {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Semver => "semver",
-            Self::Calver => "calver",
-        }
-    }
-}
-
-impl fmt::Display for VersionMode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+#[value(rename_all = "snake_case")]
 pub enum SuffixMode {
-    #[serde(rename = "git_sha")]
     #[value(name = "git_sha")]
     GitSha,
     Branch,
@@ -43,14 +20,27 @@ impl SuffixMode {
     }
 }
 
+impl FromStr for SuffixMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "git_sha" => Ok(Self::GitSha),
+            "branch" => Ok(Self::Branch),
+            _ => Err(format!(
+                "Invalid suffix mode '{s}' (expected 'git_sha' or 'branch')"
+            )),
+        }
+    }
+}
+
 impl fmt::Display for SuffixMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LabelPosition {
     BeforePrefix,
     AfterPrefix,
@@ -73,30 +63,35 @@ impl LabelPosition {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+impl FromStr for LabelPosition {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "before-prefix" => Ok(Self::BeforePrefix),
+            "after-prefix" => Ok(Self::AfterPrefix),
+            "before-base" => Ok(Self::BeforeBase),
+            "after-base" => Ok(Self::AfterBase),
+            "before-phase" => Ok(Self::BeforePhase),
+            "after-phase" => Ok(Self::AfterPhase),
+            _ => Err(format!("Invalid label position '{s}'")),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Timestamp {
     pub format: String,
     pub last: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Base {
-    pub mode: VersionMode,
     pub delimiter: String,
-
-    #[serde(alias = "year")]
-    pub major: u32,
-
-    #[serde(alias = "month")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub minor: Option<u32>,
-
-    #[serde(alias = "day")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub patch: Option<u32>,
+    pub components: Vec<(String, u16)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Phase {
     pub separator: String,
     pub name: String,
@@ -104,18 +99,18 @@ pub struct Phase {
     pub distance: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Suffix {
     pub mode: SuffixMode,
     pub separator: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Label {
     pub position: LabelPosition,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Version {
     pub prefix: String,
     pub base: Base,
@@ -126,99 +121,78 @@ pub struct Version {
 }
 
 impl Version {
-    fn right_mode(&self, expected_mode: VersionMode) -> Result<(), BumpError> {
-        if self.base.mode == expected_mode {
-            Ok(())
-        } else {
-            Err(BumpError::LogicError(format!(
-                "Operation only valid for base.mode = '{}'",
-                expected_mode.as_str()
-            )))
-        }
-    }
-
-    fn clear_phase(&mut self) {
-        self.phase.name = String::new();
-        self.phase.distance = 0;
-    }
-
-    pub fn bump(&mut self, bump_type: &BumpType) -> Result<(), BumpError> {
+    fn update_timestamp(&mut self) {
         let now = chrono::Utc::now();
-        match bump_type {
-            BumpType::Major => {
-                self.right_mode(VersionMode::Semver)?;
-                self.base.major += 1;
-                self.base.minor = self.base.minor.map(|_| 0);
-                self.base.patch = self.base.patch.map(|_| 0);
-                self.clear_phase();
+        self.timestamp.last = now.format(&self.timestamp.format).to_string();
+    }
+
+    pub fn phase_bump(&mut self, new_phase: Option<&str>) -> Result<(), BumpError> {
+        match new_phase {
+            None => {
+                self.phase.distance += 1;
             }
-            BumpType::Minor => {
-                self.right_mode(VersionMode::Semver)?;
-                if self.base.minor.is_none() {
-                    return Err(BumpError::LogicError(
-                        "Operation only valid for version.minor is set".to_string(),
-                    ));
-                }
-                self.base.minor = self.base.minor.map(|m| m + 1);
-                self.base.patch = self.base.patch.map(|_| 0);
-                self.clear_phase();
-            }
-            BumpType::Patch => {
-                self.right_mode(VersionMode::Semver)?;
-                if self.base.patch.is_none() {
-                    return Err(BumpError::LogicError(
-                        "Operation only valid for version.patch is set".to_string(),
-                    ));
-                }
-                self.base.patch = self.base.patch.map(|p| p + 1);
-                self.clear_phase();
-            }
-            BumpType::PhaseSet(name) => {
-                if *name == self.phase.name {
+            Some(new_phase) => {
+                if *new_phase == self.phase.name {
                     self.phase.distance += 1;
                 } else {
-                    self.phase.name.clone_from(name);
+                    self.phase.name = new_phase.to_string();
                     self.phase.distance = 1;
                 }
             }
-            BumpType::PhaseIncrement => {
-                self.phase.distance += 1;
-            }
-            BumpType::Calendar => {
-                self.right_mode(VersionMode::Calver)?;
-                let year = now.year() as u32;
-                let is_same_date = self.base.major == year
-                    && self.base.minor.is_none_or(|m| m == now.month())
-                    && self.base.patch.is_none_or(|d| d == now.day());
-
-                if is_same_date {
-                    self.phase.distance += 1;
-                } else {
-                    self.base.major = year;
-                    self.base.minor = self.base.minor.map(|_| now.month());
-                    self.base.patch = self.base.patch.map(|_| now.day());
-                }
-            }
         }
-        self.timestamp.last = now.format(&self.timestamp.format).to_string();
+        self.update_timestamp();
         Ok(())
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::cmd::BumpType;
+    pub fn bump(&mut self, component_name: &str) -> Result<(), BumpError> {
+        let before = self.base.components.clone();
+        let now = chrono::Utc::now();
+        let mut after_target = false;
+        for (name, value) in self.base.components.iter_mut() {
+            if *name == "year" {
+                *value = now.year() as u16;
+                continue;
+            } else if *name == "month" {
+                *value = now.month() as u16;
+                continue;
+            } else if *name == "day" {
+                *value = now.day() as u16;
+                continue;
+            }
 
-    fn test_version() -> Version {
-        Version {
+            if *name == component_name {
+                *value += 1;
+                after_target = true;
+                continue;
+            }
+
+            if after_target {
+                *value = 0;
+            }
+        }
+        if self.base.components != before {
+            self.clear_phase();
+        }
+        self.update_timestamp();
+        Ok(())
+    }
+
+    fn clear_phase(&mut self) {
+        self.phase.name.clear();
+        self.phase.distance = 0;
+    }
+
+    #[cfg(test)]
+    pub fn test_fixture() -> Self {
+        Self {
             prefix: "v-".to_string(),
             base: Base {
-                mode: VersionMode::Semver,
                 delimiter: ".".to_string(),
-                major: 0,
-                minor: Some(1),
-                patch: Some(0),
+                components: vec![
+                    ("major".to_string(), 0),
+                    ("minor".to_string(), 1),
+                    ("patch".to_string(), 0),
+                ],
             },
             phase: Phase {
                 separator: "-".to_string(),
@@ -239,124 +213,158 @@ mod tests {
             },
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Datelike;
+
+    fn get(version: &Version, name: &str) -> u16 {
+        version
+            .base
+            .components
+            .iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("missing component {name}"))
+            .1
+    }
+
+    fn with_components(components: Vec<(&str, u16)>) -> Version {
+        let mut version = Version::test_fixture();
+        version.base.components = components
+            .into_iter()
+            .map(|(name, value)| (name.to_string(), value))
+            .collect();
+        version
+    }
 
     #[test]
-    fn bump_patch_increments_and_clears_phase() {
-        let mut v = test_version();
-        v.phase.name = "beta".to_string();
+    fn bump_minor_increments_and_zeros_later() {
+        let mut v = Version::test_fixture();
+        v.bump("minor").unwrap();
+        assert_eq!(
+            v.base.components,
+            vec![
+                ("major".to_string(), 0),
+                ("minor".to_string(), 2),
+                ("patch".to_string(), 0),
+            ]
+        );
+    }
+
+    #[test]
+    fn bump_major_zeros_minor_and_patch() {
+        let mut v = Version::test_fixture();
+        v.bump("major").unwrap();
+        assert_eq!(
+            v.base.components,
+            vec![
+                ("major".to_string(), 1),
+                ("minor".to_string(), 0),
+                ("patch".to_string(), 0),
+            ]
+        );
+    }
+
+    #[test]
+    fn bump_custom_keys_cascade_by_order() {
+        let mut v = with_components(vec![("alpha", 2), ("beta", 9), ("gamma", 4)]);
+        v.bump("alpha").unwrap();
+        assert_eq!(get(&v, "alpha"), 3);
+        assert_eq!(get(&v, "beta"), 0);
+        assert_eq!(get(&v, "gamma"), 0);
+    }
+
+    #[test]
+    fn mixed_bump_custom_syncs_dates_and_zeros_later_custom() {
+        let mut v = with_components(vec![
+            ("year", 2020),
+            ("alpha", 2),
+            ("month", 1),
+            ("beta", 9),
+            ("day", 1),
+        ]);
+        v.bump("alpha").unwrap();
+        let now = chrono::Utc::now();
+        assert_eq!(get(&v, "year"), now.year() as u16);
+        assert_eq!(get(&v, "month"), now.month() as u16);
+        assert_eq!(get(&v, "day"), now.day() as u16);
+        assert_eq!(get(&v, "alpha"), 3);
+        assert_eq!(get(&v, "beta"), 0);
+    }
+
+    #[test]
+    fn bump_date_key_syncs_calendar_and_does_not_cascade() {
+        let mut v = with_components(vec![
+            ("year", 2020),
+            ("alpha", 2),
+            ("month", 1),
+            ("beta", 9),
+        ]);
+        v.bump("month").unwrap();
+        let now = chrono::Utc::now();
+        assert_eq!(get(&v, "year"), now.year() as u16);
+        assert_eq!(get(&v, "month"), now.month() as u16);
+        assert_eq!(get(&v, "alpha"), 2);
+        assert_eq!(get(&v, "beta"), 9);
+    }
+
+    #[test]
+    fn bump_unknown_name_is_noop_on_custom_keys() {
+        let mut v = Version::test_fixture();
+        v.bump("nope").unwrap();
+        assert_eq!(v.base.components, Version::test_fixture().base.components);
+    }
+
+    #[test]
+    fn bump_unknown_name_still_syncs_date_keys() {
+        let mut v = with_components(vec![("year", 1999), ("alpha", 1)]);
+        v.bump("nope").unwrap();
+        assert_eq!(get(&v, "year"), chrono::Utc::now().year() as u16);
+        assert_eq!(get(&v, "alpha"), 1);
+    }
+
+    #[test]
+    fn bump_clears_phase_when_base_changes() {
+        let mut v = Version::test_fixture();
+        v.phase.name = "alpha".to_string();
         v.phase.distance = 2;
-        v.bump(&BumpType::Patch).unwrap();
-        assert_eq!(v.base.patch, Some(1));
+        v.bump("patch").unwrap();
+        assert_eq!(v.phase.name, "");
         assert_eq!(v.phase.distance, 0);
-        assert!(v.phase.name.is_empty());
     }
 
     #[test]
-    fn bump_minor_without_patch_key_succeeds() {
-        let mut v = test_version();
-        v.base.patch = None;
-        v.bump(&BumpType::Minor).unwrap();
-        assert_eq!(v.base.minor, Some(2));
-        assert_eq!(v.base.patch, None);
+    fn bump_unknown_name_does_not_clear_phase_without_base_change() {
+        let mut v = Version::test_fixture();
+        v.phase.name = "alpha".to_string();
+        v.phase.distance = 2;
+        v.bump("nope").unwrap();
+        assert_eq!(v.phase.name, "alpha");
+        assert_eq!(v.phase.distance, 2);
     }
 
     #[test]
-    fn bump_minor_resets_patch_when_present() {
-        let mut v = test_version();
-        v.base.patch = Some(5);
-        v.bump(&BumpType::Minor).unwrap();
-        assert_eq!(v.base.minor, Some(2));
-        assert_eq!(v.base.patch, Some(0));
+    fn phase_bump_empty_increments_distance() {
+        let mut v = Version::test_fixture();
+        v.phase_bump(None).unwrap();
+        assert_eq!(v.phase.distance, 1);
+        assert_eq!(v.phase.name, "");
+        v.phase_bump(None).unwrap();
+        assert_eq!(v.phase.distance, 2);
     }
 
     #[test]
-    fn bump_minor_requires_minor_key() {
-        let mut v = test_version();
-        v.base.minor = None;
-        let err = v.bump(&BumpType::Minor).unwrap_err();
-        assert!(err.to_string().contains("version.minor is set"));
-    }
-
-    #[test]
-    fn bump_patch_requires_patch_key() {
-        let mut v = test_version();
-        v.base.patch = None;
-        let err = v.bump(&BumpType::Patch).unwrap_err();
-        assert!(err.to_string().contains("version.patch is set"));
-    }
-
-    #[test]
-    fn bump_major_with_major_only_succeeds() {
-        let mut v = test_version();
-        v.base.minor = None;
-        v.base.patch = None;
-        v.bump(&BumpType::Major).unwrap();
-        assert_eq!(v.base.major, 1);
-        assert_eq!(v.base.minor, None);
-        assert_eq!(v.base.patch, None);
-    }
-
-    #[test]
-    fn bump_major_resets_present_optional_keys_only() {
-        let mut v = test_version();
-        v.base.patch = None;
-        v.bump(&BumpType::Major).unwrap();
-        assert_eq!(v.base.major, 1);
-        assert_eq!(v.base.minor, Some(0));
-        assert_eq!(v.base.patch, None);
-    }
-
-    #[test]
-    fn bump_patch_with_patch_only_succeeds() {
-        let mut v = test_version();
-        v.base.minor = None;
-        v.bump(&BumpType::Patch).unwrap();
-        assert_eq!(v.base.major, 0);
-        assert_eq!(v.base.minor, None);
-        assert_eq!(v.base.patch, Some(1));
-    }
-
-    #[test]
-    fn bump_phase_unaffected_by_missing_base_keys() {
-        let mut v = test_version();
-        v.base.minor = None;
-        v.base.patch = None;
-        v.bump(&BumpType::PhaseSet("beta".to_string())).unwrap();
+    fn phase_bump_named_sets_and_resets_distance() {
+        let mut v = Version::test_fixture();
+        v.phase_bump(Some("beta")).unwrap();
         assert_eq!(v.phase.name, "beta");
         assert_eq!(v.phase.distance, 1);
-    }
-
-    fn calver_version() -> Version {
-        let mut v = test_version();
-        v.base.mode = VersionMode::Calver;
-        v.base.major = 2020;
-        v.base.minor = Some(1);
-        v.base.patch = Some(1);
-        v
-    }
-
-    #[test]
-    fn calver_calendar_year_only_keeps_absent_month_and_day() {
-        let mut v = calver_version();
-        v.base.minor = None;
-        v.base.patch = None;
-        v.bump(&BumpType::Calendar).unwrap();
-        assert_eq!(v.base.minor, None);
-        assert_eq!(v.base.patch, None);
-    }
-
-    #[test]
-    fn calver_calendar_no_day_keeps_absent_day() {
-        let mut v = calver_version();
-        v.base.patch = None;
-        v.bump(&BumpType::Calendar).unwrap();
-        assert_eq!(v.base.patch, None);
-    }
-
-    #[test]
-    fn bump_wrong_mode_mentions_base_mode() {
-        let mut v = test_version();
-        let err = v.bump(&BumpType::Calendar).unwrap_err();
-        assert!(err.to_string().contains("base.mode = 'calver'"));
+        v.phase_bump(Some("beta")).unwrap();
+        assert_eq!(v.phase.distance, 2);
+        v.phase_bump(Some("rc")).unwrap();
+        assert_eq!(v.phase.name, "rc");
+        assert_eq!(v.phase.distance, 1);
     }
 }

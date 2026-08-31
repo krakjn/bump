@@ -1,7 +1,6 @@
 prefix = "v"
 
 [base]
-mode = "semver"
 delimiter = "."
 major = 0
 minor = 1
