@@ -1,6 +1,6 @@
 use crate::{
     cmd::{BumpError, load_bumpfile, resolve_path},
-    print::{self, PrintOptions},
+    print,
     version::Version,
 };
 use clap::ArgMatches;
@@ -56,8 +56,8 @@ pub fn update(matches: &ArgMatches) -> Result<(), BumpError> {
 
 fn cargo_toml(version: &Version, path: &Path) -> Result<(), BumpError> {
     let mut doc = load_toml(path)?;
-
-    let v_str = print::to_string(version, &PrintOptions::no_prefix())?;
+    let selection = print::PrintSelection::default().without_prefix();
+    let v_str = print::to_string(version, &selection)?;
     println!("cargo doesn't like a character prefix in Cargo.toml, stripping prefix");
 
     set_toml_field(&mut doc, "package", "version", &v_str)?;
@@ -85,7 +85,7 @@ fn pyproject_toml(version: &Version, path: &Path) -> Result<(), BumpError> {
         "{yellow}  Public version identifiers MUST NOT include leading or trailing whitespace.{reset}"
     );
 
-    let v_str = print::to_string(version, &PrintOptions::default())?;
+    let v_str = print::to_string(version, &print::PrintSelection::default())?;
     let Some(project) = doc.get_mut("project") else {
         return Err(BumpError::LogicError(
             "no [project] section found in pyproject.toml".to_string(),

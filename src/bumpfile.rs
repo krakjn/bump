@@ -1,5 +1,5 @@
 use crate::cmd::{BumpError, ensure_directory_exists};
-use crate::print::{self, PrintOptions};
+use crate::print::{self, PrintSelection, to_string};
 use crate::version::Version;
 use std::{
     fmt, fs, io,
@@ -84,22 +84,6 @@ fn set_optional_u32(
     Ok(())
 }
 
-// fn set_required_u32(
-//     table: &mut Table,
-//     key: &str,
-//     val: u32,
-//     path: &Path,
-//     section: &str,
-// ) -> Result<(), BumpError> {
-//     let v = i64::from(val);
-//     if !table.contains_key(key) {
-//         table.insert(key, value(v));
-//     } else {
-//         set(table, key, v, section, path)?;
-//     }
-//     Ok(())
-// }
-
 fn write_base(doc: &mut DocumentMut, version: &Version, path: &Path) -> Result<(), BumpError> {
     let base = table_mut(doc, "base", path)?;
 
@@ -180,7 +164,7 @@ pub fn report(verb: &str, path: &Path, version: &Version) -> Result<String, Bump
     Ok(format!(
         "{verb} {} to {}",
         path.display(),
-        print::to_string(version, &PrintOptions::with_timestamp())?
+        print::to_string(version, &PrintSelection::default().with_timestamp())?
     ))
 }
 
