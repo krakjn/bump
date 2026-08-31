@@ -145,6 +145,7 @@ impl Version {
     }
 
     pub fn bump(&mut self, component_name: &str) -> Result<(), BumpError> {
+        let before = self.base.components.clone();
         let now = chrono::Utc::now();
         let mut after_target = false;
         for (name, value) in self.base.components.iter_mut() {
@@ -169,8 +170,16 @@ impl Version {
                 *value = 0;
             }
         }
+        if self.base.components != before {
+            self.clear_phase();
+        }
         self.update_timestamp();
         Ok(())
+    }
+
+    fn clear_phase(&mut self) {
+        self.phase.name.clear();
+        self.phase.distance = 0;
     }
 
     #[cfg(test)]
@@ -314,6 +323,26 @@ mod tests {
         v.bump("nope").unwrap();
         assert_eq!(get(&v, "year"), chrono::Utc::now().year() as u16);
         assert_eq!(get(&v, "alpha"), 1);
+    }
+
+    #[test]
+    fn bump_clears_phase_when_base_changes() {
+        let mut v = Version::test_fixture();
+        v.phase.name = "alpha".to_string();
+        v.phase.distance = 2;
+        v.bump("patch").unwrap();
+        assert_eq!(v.phase.name, "");
+        assert_eq!(v.phase.distance, 0);
+    }
+
+    #[test]
+    fn bump_unknown_name_does_not_clear_phase_without_base_change() {
+        let mut v = Version::test_fixture();
+        v.phase.name = "alpha".to_string();
+        v.phase.distance = 2;
+        v.bump("nope").unwrap();
+        assert_eq!(v.phase.name, "alpha");
+        assert_eq!(v.phase.distance, 2);
     }
 
     #[test]

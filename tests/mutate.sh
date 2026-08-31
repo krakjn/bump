@@ -48,6 +48,9 @@ assert_eq "mutate/phase/increment" "${PREFIX}0.1.0-rc.2" p
 bump phase alpha >/dev/null
 assert_eq "mutate/phase/switch" "${PREFIX}0.1.0-alpha.1" p
 
+bump patch >/dev/null
+assert_eq "mutate/patch/clears-phase" "${PREFIX}0.1.1" p
+
 section "Calendar keys sync to UTC"
 
 setup_calver
