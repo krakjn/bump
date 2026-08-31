@@ -107,7 +107,7 @@ pub fn cli(base_components: Vec<(String, u16)>) -> Command {
     
     let base_cmds = if base_components.is_empty() {
         vec![
-            base_cmd("_base_", "Increment '_base_' version, if you see this either bumpfile is not found or you have not defined any base components"),
+            base_cmd("_base_", "Increment '_base_' component, NOTE: can't find [base] keys"),
         ]
     } else {
         build_base_cmds(base_components)
