@@ -1,23 +1,16 @@
-use super::{Fields, substitute};
-use crate::version::VersionMode;
-
-const SEMVER: &str = r#"#define {emit_prefix}{case_prefix} "{version_prefix}"
-#define {emit_prefix}{case_major} {version_major}
-#define {emit_prefix}{case_minor} {version_minor}
-#define {emit_prefix}{case_patch} {version_patch}
-#define {emit_prefix}{case_phase} "{version_phase}"
-#define {emit_prefix}{case_phase_distance} {version_phase_distance}
-#define {emit_prefix}{case_string} "{version_string}"
-#define {emit_prefix}{case_timestamp} "{version_timestamp}"
-"#;
-
-const CALVER: &str = r#"#define {emit_prefix}{case_string} "{version_string}"
-#define {emit_prefix}{case_timestamp} "{version_timestamp}"
-"#;
+use super::{Fields, base_int_lines, join_blocks, substitute};
 
 pub(crate) fn render(fields: &Fields) -> String {
-    match fields.version_mode {
-        VersionMode::Semver => substitute(SEMVER, fields),
-        VersionMode::Calver => substitute(CALVER, fields),
-    }
+    let prefix = substitute("#define {emit_prefix}{case_prefix} \"{version_prefix}\"", fields);
+    let base = base_int_lines(fields, |prefix, c| {
+        format!("#define {prefix}{} {}", c.case_name, c.value)
+    });
+    let tail = substitute(
+        r#"#define {emit_prefix}{case_phase} "{version_phase}"
+#define {emit_prefix}{case_phase_distance} {version_phase_distance}
+#define {emit_prefix}{case_string} "{version_string}"
+#define {emit_prefix}{case_timestamp} "{version_timestamp}""#,
+        fields,
+    );
+    join_blocks(&[&prefix, &base, &tail])
 }

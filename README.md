@@ -57,7 +57,7 @@ To use CalVer, set `mode = "calver"` under `[base]` in your bumpfile.
 | `bump PATH --patch` | `bump patch PATH` |
 | `bump gen -l LANG -o FILE` | `bump emit LANG -o FILE` |
 
-`init`, `tag`, `update`, `completion`, bumpfile schema, and version assembly rules are unchanged in role.
+`init`, `tag`, `update`, bumpfile schema, and version assembly rules are unchanged in role.
 
 ## Commands
 
@@ -209,42 +209,6 @@ execute_process(
   WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/
   OUTPUT_VARIABLE VERSION)
 project("your-app" VERSION ${VERSION} LANGUAGES CXX C)
-```
-
-### Shell Completion
-
-`bump completion SHELL` prints a completion script for the given shell. Regenerate after upgrading `bump` so completions stay in sync with new flags and subcommands.
-
-Supported shells: `bash`, `elvish`, `fish`, `powershell`, `zsh`.
-
-**Bash:**
-
-```bash
-bump completion bash >> ~/.bash_completion.d/bump
-# or load once in the current session:
-source <(bump completion bash)
-```
-
-**Zsh:**
-
-```zsh
-mkdir -p ~/.zsh/completions
-bump completion zsh > ~/.zsh/completions/_bump
-# add to ~/.zshrc if needed: fpath=(~/.zsh/completions $fpath); autoload -Uz compinit && compinit
-```
-
-**Fish:**
-
-```fish
-bump completion fish > ~/.config/fish/completions/bump.fish
-```
-
-**PowerShell:**
-
-```powershell
-bump completion powershell | Out-String | Invoke-Expression
-# or append to your profile:
-Add-Content $PROFILE 'bump completion powershell | Out-String | Invoke-Expression'
 ```
 
 - **[Configuration Reference](docs/CONFIGURATION.md)** — bumpfile schema, print flags, and mode behavior

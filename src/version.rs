@@ -1,12 +1,11 @@
 use crate::cmd::BumpError;
 use chrono::Datelike;
-use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::str::FromStr;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+#[value(rename_all = "snake_case")]
 pub enum SuffixMode {
-    #[serde(rename = "git_sha")]
     #[value(name = "git_sha")]
     GitSha,
     Branch,
@@ -21,14 +20,27 @@ impl SuffixMode {
     }
 }
 
+impl FromStr for SuffixMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "git_sha" => Ok(Self::GitSha),
+            "branch" => Ok(Self::Branch),
+            _ => Err(format!(
+                "Invalid suffix mode '{s}' (expected 'git_sha' or 'branch')"
+            )),
+        }
+    }
+}
+
 impl fmt::Display for SuffixMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LabelPosition {
     BeforePrefix,
     AfterPrefix,
@@ -51,20 +63,35 @@ impl LabelPosition {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+impl FromStr for LabelPosition {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "before-prefix" => Ok(Self::BeforePrefix),
+            "after-prefix" => Ok(Self::AfterPrefix),
+            "before-base" => Ok(Self::BeforeBase),
+            "after-base" => Ok(Self::AfterBase),
+            "before-phase" => Ok(Self::BeforePhase),
+            "after-phase" => Ok(Self::AfterPhase),
+            _ => Err(format!("Invalid label position '{s}'")),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Timestamp {
     pub format: String,
     pub last: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Base {
     pub delimiter: String,
-    // use Vec to store in TOML order
     pub components: Vec<(String, u16)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Phase {
     pub separator: String,
     pub name: String,
@@ -72,18 +99,18 @@ pub struct Phase {
     pub distance: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Suffix {
     pub mode: SuffixMode,
     pub separator: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Label {
     pub position: LabelPosition,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Version {
     pub prefix: String,
     pub base: Base,
@@ -94,25 +121,20 @@ pub struct Version {
 }
 
 impl Version {
-    fn clear_phase(&mut self) {
-        self.phase.name = String::new();
-        self.phase.distance = 0;
-    }
-    
     fn update_timestamp(&mut self) {
         let now = chrono::Utc::now();
         self.timestamp.last = now.format(&self.timestamp.format).to_string();
     }
-    
+
     pub fn phase_bump(&mut self, new_phase: Option<&str>) -> Result<(), BumpError> {
         match new_phase {
-            None => {  // empty val, just increase
+            None => {
                 self.phase.distance += 1;
             }
             Some(new_phase) => {
-                if *new_phase == self.phase.name {  // same phase, just increase distance
+                if *new_phase == self.phase.name {
                     self.phase.distance += 1;
-                } else {  // new phase, set it and reset distance
+                } else {
                     self.phase.name = new_phase.to_string();
                     self.phase.distance = 1;
                 }
@@ -126,7 +148,6 @@ impl Version {
         let now = chrono::Utc::now();
         let mut after_target = false;
         for (name, value) in self.base.components.iter_mut() {
-            // calendar keys keep sync with date
             if *name == "year" {
                 *value = now.year() as u16;
                 continue;
@@ -143,12 +164,44 @@ impl Version {
                 after_target = true;
                 continue;
             }
-            
+
             if after_target {
                 *value = 0;
             }
         }
         self.update_timestamp();
         Ok(())
+    }
+
+    #[cfg(test)]
+    pub fn test_fixture() -> Self {
+        Self {
+            prefix: "v-".to_string(),
+            base: Base {
+                delimiter: ".".to_string(),
+                components: vec![
+                    ("major".to_string(), 0),
+                    ("minor".to_string(), 1),
+                    ("patch".to_string(), 0),
+                ],
+            },
+            phase: Phase {
+                separator: "-".to_string(),
+                name: String::new(),
+                delimiter: ".".to_string(),
+                distance: 0,
+            },
+            suffix: Suffix {
+                mode: SuffixMode::GitSha,
+                separator: "+".to_string(),
+            },
+            timestamp: Timestamp {
+                format: "%Y-%m-%d %H:%M:%S %Z".to_string(),
+                last: "2026-01-01 00:00:00 UTC".to_string(),
+            },
+            label: Label {
+                position: LabelPosition::AfterBase,
+            },
+        }
     }
 }

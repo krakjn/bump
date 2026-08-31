@@ -303,6 +303,21 @@ assert_contains \
     '"string": "2020.01.01"' \
     emit json
 
+assert_contains \
+    "emit/calver/c/year-month-day" \
+    "#define VERSION_YEAR 2020" \
+    emit c
+
+assert_contains \
+    "emit/calver/c/month" \
+    "#define VERSION_MONTH 1" \
+    emit c
+
+assert_contains \
+    "emit/calver/c/day" \
+    "#define VERSION_DAY 1" \
+    emit c
+
 assert_lacks \
     "emit/calver/c/stdout/no-include-guard" \
     "#ifndef BUMP_VERSION_H" \
@@ -379,6 +394,47 @@ if [[ "$stderr" != *"written to"* ]]; then
 fi
 echo "ok"
 echo
+
+echo "ok"
+echo
+
+section "Emit custom base keys"
+
+cat > bump.toml <<'EOF'
+prefix = "v-"
+
+[base]
+delimiter = "."
+alpha = 2
+beta = 0
+
+[phase]
+separator = "-"
+name = ""
+delimiter = "."
+distance = 0
+
+[suffix]
+mode = "git_sha"
+separator = "+"
+
+[timestamp]
+format = "%Y-%m-%d %H:%M:%S %Z"
+last = "2026-01-01 00:00:00 UTC"
+
+[label]
+position = "after-base"
+EOF
+
+assert_contains \
+    "emit/custom/c/alpha" \
+    "#define VERSION_ALPHA 2" \
+    emit c
+
+assert_contains \
+    "emit/custom/json/alpha" \
+    '"alpha": "2"' \
+    emit json
 
 section "Invalid case / format rejected"
 

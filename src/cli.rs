@@ -3,8 +3,7 @@ use crate::version::SuffixMode;
 use crate::print::PrintValue;
 use clap::builder::StyledStr;
 use clap::builder::styling::{AnsiColor, Styles};
-use clap::{Arg, ArgGroup, Command, value_parser};
-use clap_complete::aot::Shell;
+use clap::{Arg, Command, value_parser};
 use std::fmt::Write;
 
 const HELP_STYLES: Styles = Styles::styled()
@@ -50,12 +49,11 @@ fn base_cmd(name: impl Into<String>, about: impl Into<String>) -> Command {
         .about(about.into())
         .arg(if_changed_from_arg())
         .arg(bumpfile_arg())
-        .group(ArgGroup::new("mutate"))
 }
 
 pub fn build_base_cmds(base_components: Vec<(String, u16)>) -> Vec<Command> {
     base_components.into_iter().map(|(name, _value)| {
-        base_cmd(name.clone(), format!("Increment {} version", name))
+        base_cmd(name.clone(), format!("Increment '{}' version", name))
     }).collect()
 }
 
@@ -102,9 +100,7 @@ pub fn cli(base_components: Vec<(String, u16)>) -> Command {
     
     let base_cmds = if base_components.is_empty() {
         vec![
-            base_cmd("major", "Increment major version"),
-            base_cmd("minor", "Increment minor version"),
-            base_cmd("patch", "Increment patch version"),
+            base_cmd("_base_", "Increment '_base_' version, if you see this either bumpfile is not found or you have not defined any base components"),
         ]
     } else {
         build_base_cmds(base_components)
@@ -237,16 +233,5 @@ pub fn cli(base_components: Vec<(String, u16)>) -> Command {
                         .help("File type bump knows how to update"),
                 )
                 .arg(bumpfile_arg()),
-        )
-        .subcommand(
-            Command::new("completion")
-                .about("Generate shell completion script")
-                .arg(
-                    Arg::new("shell")
-                        .value_name("SHELL")
-                        .value_parser(value_parser!(Shell))
-                        .required(true)
-                        .help("Output shell completion script for SHELL"),
-                ),
         )
 }

@@ -1,8 +1,9 @@
 use crate::cmd::{BumpError, get_git_branch, get_git_commit_sha, is_git_repository, load_bumpfile};
 use crate::version::{LabelPosition, SuffixMode, Version};
 use clap::{ArgMatches, ValueEnum};
+use std::collections::HashSet;
 
-#[derive(ValueEnum, Debug, Clone, PartialEq, Eq)]
+#[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PrintValue {
     Prefix,
     Base,
@@ -12,121 +13,50 @@ pub enum PrintValue {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
- pub struct PrintSelection {
+pub struct PrintSelection {
     pub full: bool,
-    pub semver: bool,  // ignores --with "base", --without "base", --only *
-    pub with_prefix: bool,
-    pub with_base: bool,
-    pub with_phase: bool,
-    pub with_suffix: bool,
-    pub with_timestamp: bool,
-    pub without_prefix: bool,
-    pub without_base: bool,
-    pub without_phase: bool,
-    pub without_suffix: bool,
-    pub without_timestamp: bool,
-    pub only_prefix: bool,
-    pub only_base: bool,
-    pub only_phase: bool,
-    pub only_suffix: bool,
-    pub only_timestamp: bool,
+    pub semver: bool,
+    pub with: HashSet<PrintValue>,
+    pub without: HashSet<PrintValue>,
+    pub only: Option<PrintValue>,
     pub label: Option<String>,
 }
 
 impl PrintSelection {
-    pub fn default() -> Self {
-        Self {
-            full: false,
-            semver: false,
-            with_prefix: false,
-            with_base: false,
-            with_phase: false,
-            with_suffix: false,
-            with_timestamp: false,
-            without_prefix: false,
-            without_base: false,
-            without_phase: false,
-            without_suffix: false,
-            without_timestamp: false,
-            only_prefix: false,
-            only_base: false,
-            only_phase: false,
-            only_suffix: false,
-            only_timestamp: false,
-            label: None,
-        }
-    }
-    
     pub fn without_prefix(mut self) -> Self {
-        self.without_prefix = true;
+        self.without.insert(PrintValue::Prefix);
         self
     }
 
     pub fn with_timestamp(mut self) -> Self {
-        self.with_timestamp = true;
+        self.with.insert(PrintValue::Timestamp);
         self
     }
 }
 
-fn selection_from_matches(matches: &ArgMatches) -> Result<PrintSelection, BumpError> {
+fn selection_from_matches(matches: &ArgMatches) -> PrintSelection {
     let mut selection = PrintSelection::default();
-    for id in matches.ids() {  // user can define whether its "with" or "without" first
-        match id.as_str() {
-            "full" => { selection.full = true; break; }  // overrides everything else
-            "semver" => selection.semver = true,
-            "with" => {
-                if let Some(args) = matches.get_many::<PrintValue>("with") {
-                    for arg in args {
-                        match arg {
-                            PrintValue::Prefix => selection.with_prefix = true,
-                            PrintValue::Base => selection.with_base = true,
-                            PrintValue::Phase => selection.with_phase = true,
-                            PrintValue::Suffix => selection.with_suffix = true,
-                            PrintValue::Timestamp => selection.with_timestamp = true,
-                        }
-                    }
-                }
-            }
-            "without" => {
-                if let Some(args) = matches.get_many::<PrintValue>("without") {
-                    for arg in args {
-                        match arg {
-                            PrintValue::Prefix => selection.without_prefix = true,
-                            PrintValue::Base => selection.without_base = true,
-                            PrintValue::Phase => selection.without_phase = true,
-                            PrintValue::Suffix => selection.without_suffix = true,
-                            PrintValue::Timestamp => selection.without_timestamp = true,
-                        }
-                    }
-                }
-            }
-            "only" => {
-                if let Some(arg) = matches.get_one::<PrintValue>("only") {
-                    match arg {
-                        PrintValue::Prefix => selection.only_prefix = true,
-                        PrintValue::Base => selection.only_base = true,
-                        PrintValue::Phase => selection.only_phase = true,
-                        PrintValue::Suffix => selection.only_suffix = true,
-                        PrintValue::Timestamp => selection.only_timestamp = true,
-                    }
-                }
-            }
-            "label" => {
-                if let Some(label) = matches.get_one::<String>("label") {
-                    selection.label = Some(label.to_string());
-                }
-            }
-            _ => return Err(BumpError::LogicError(format!("Unknown print option: {id}"))),
-        }
+    if matches.get_flag("full") {
+        selection.full = true;
+        return selection;
     }
-    Ok(selection)
+    selection.semver = matches.get_flag("semver");
+    if let Some(args) = matches.get_many::<PrintValue>("with") {
+        selection.with.extend(args.copied());
+    }
+    if let Some(args) = matches.get_many::<PrintValue>("without") {
+        selection.without.extend(args.copied());
+    }
+    selection.only = matches.get_one::<PrintValue>("only").copied();
+    selection.label = matches.get_one::<String>("label").cloned();
+    selection
 }
 
 pub fn print(matches: &ArgMatches) -> Result<(), BumpError> {
     let bumpfile = load_bumpfile(matches)?;
     let version = bumpfile.version()?;
-    let selection = selection_from_matches(matches)?;
-    print!("{}", version.to_string(&selection)?);
+    let selection = selection_from_matches(matches);
+    print!("{}", to_string(&version, &selection)?);
     Ok(())
 }
 
@@ -182,6 +112,26 @@ fn push_if_active(out: &mut String, field: &Field) {
 }
 
 impl Components {
+    fn field(&self, value: PrintValue) -> &Field {
+        match value {
+            PrintValue::Prefix => &self.prefix,
+            PrintValue::Base => &self.base,
+            PrintValue::Phase => &self.phase,
+            PrintValue::Suffix => &self.suffix,
+            PrintValue::Timestamp => &self.timestamp,
+        }
+    }
+
+    fn field_mut(&mut self, value: PrintValue) -> &mut Field {
+        match value {
+            PrintValue::Prefix => &mut self.prefix,
+            PrintValue::Base => &mut self.base,
+            PrintValue::Phase => &mut self.phase,
+            PrintValue::Suffix => &mut self.suffix,
+            PrintValue::Timestamp => &mut self.timestamp,
+        }
+    }
+
     fn default(version: &Version) -> Result<Self, BumpError> {
         let suffix_value = if is_git_repository() {
             suffix(version)?
@@ -217,8 +167,6 @@ impl Components {
         })
     }
 
-    // will return early to supply "only" category
-    // if None, then collect will construct the string
     fn apply(
         &mut self,
         version: &Version,
@@ -234,54 +182,18 @@ impl Components {
             return Ok(None);
         }
 
-        // on "only"s it returns with just that
-        if selection.only_prefix {
-            return Ok(Some(self.prefix.value.clone()));
-        }
-        if selection.only_base {
-            return Ok(Some(self.base.value.clone()));
-        }
-        if selection.only_phase {
-            return Ok(Some(self.phase.value.clone()));
-        }
-        if selection.only_suffix {
-            return Ok(Some(self.suffix.value.clone()));
-        }
-        if selection.only_timestamp {
-            return Ok(Some(self.timestamp.value.clone()));
+        if let Some(only) = selection.only {
+            return Ok(Some(self.field(only).value.clone()));
         }
 
-        if selection.with_prefix {
-            self.prefix.active = true;
+        for &value in &selection.with {
+            if value == PrintValue::Suffix {
+                self.suffix.value = suffix(version)?;
+            }
+            self.field_mut(value).active = true;
         }
-        if selection.with_base {
-            self.base.active = true;
-        }
-        if selection.with_phase {
-            self.phase.active = true;
-        }
-        if selection.with_suffix {
-            self.suffix.value = suffix(version)?;
-            self.suffix.active = true;
-        }
-        if selection.with_timestamp {
-            self.timestamp.active = true;
-        }
-
-        if selection.without_prefix {
-            self.prefix.active = false;
-        }
-        if selection.without_base {
-            self.base.active = false;
-        }
-        if selection.without_phase {
-            self.phase.active = false;
-        }
-        if selection.without_suffix {
-            self.suffix.active = false;
-        }
-        if selection.without_timestamp {
-            self.timestamp.active = false;
+        for &value in &selection.without {
+            self.field_mut(value).active = false;
         }
         if selection.label.is_some() {
             self.label.value = selection.label.clone();
@@ -321,28 +233,19 @@ impl Components {
 pub fn to_string(version: &Version, selection: &PrintSelection) -> Result<String, BumpError> {
     let mut components = Components::default(version)?;
     if let Some(segment) = components.apply(version, selection)? {
-        // for "only" selection
         return Ok(segment);
     }
-    Ok(components.collect())  // constructs the string
+    Ok(components.collect())
 }
 
 fn base(version: &Version) -> String {
     let mut output = String::new();
     for (index, (name, value)) in version.base.components.iter().enumerate() {
         match name.as_str() {
-            "year" => {
-                output.push_str(&format!("{:04}", value));
-            }
-            "month" => {
-                output.push_str(&format!("{:02}", value));
-            }
-            "day" => {
-                output.push_str(&format!("{:02}", value));
-            }
-            _ => {
-                output.push_str(&value.to_string());
-            }
+            "year" => output.push_str(&format!("{value:04}")),
+            "month" => output.push_str(&format!("{value:02}")),
+            "day" => output.push_str(&format!("{value:02}")),
+            _ => output.push_str(&value.to_string()),
         }
         if index != version.base.components.len() - 1 {
             output.push_str(&version.base.delimiter);
@@ -357,7 +260,7 @@ fn phase(version: &Version) -> String {
     } else if version.phase.name.is_empty() && version.phase.distance > 0 {
         format!("{}{}", version.phase.separator, version.phase.distance)
     } else if version.phase.distance == 0 {
-        format!("{}{}", version.phase.separator, version.phase.name,)
+        format!("{}{}", version.phase.separator, version.phase.name)
     } else {
         format!(
             "{}{}{}{}",
@@ -388,59 +291,17 @@ fn suffix(version: &Version) -> Result<String, BumpError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::version::{
-        Base, Label, LabelPosition, Phase, Suffix, SuffixMode, Timestamp, Version, VersionMode,
-    };
-
-    fn test_version() -> Version {
-        Version {
-            prefix: "v-".to_string(),
-            base: Base {
-                mode: VersionMode::Semver,
-                delimiter: ".".to_string(),
-                major: 0,
-                minor: Some(1),
-                patch: Some(0),
-            },
-            phase: Phase {
-                separator: "-".to_string(),
-                name: String::new(),
-                delimiter: ".".to_string(),
-                distance: 0,
-            },
-            suffix: Suffix {
-                mode: SuffixMode::GitSha,
-                separator: "+".to_string(),
-            },
-            timestamp: Timestamp {
-                format: "%Y-%m-%d %H:%M:%S %Z".to_string(),
-                last: "2026-01-01 00:00:00 UTC".to_string(),
-            },
-            label: Label {
-                position: LabelPosition::AfterBase,
-            },
-        }
-    }
 
     #[test]
     fn only_base_returns_base_without_newline() {
-        let v = test_version();
         let out = to_string(
-            &v,
-            &PrintOptions {
-                only_base: true,
-                ..Default::default()
+            &Version::test_fixture(),
+            &PrintSelection {
+                only: Some(PrintValue::Base),
+                ..PrintSelection::default()
             },
         )
         .unwrap();
         assert_eq!(out, "0.1.0");
-    }
-
-    #[test]
-    fn conflicting_only_flags_error() {
-        let only = [true, true, false].into_iter().filter(|&b| b).count();
-        assert!(only > 1);
-        let err = BumpError::ParseError("Only one type of --only* allowed".to_string());
-        assert!(err.to_string().contains("Only one type of --only*"));
     }
 }

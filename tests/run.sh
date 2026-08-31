@@ -24,7 +24,6 @@ SUITES=(
     tag
     update
     schema
-    completion
 )
 
 for suite in "${SUITES[@]}"; do

@@ -43,8 +43,7 @@ Integration tests require a release build (see below).
 ### Running Tests
 
 Integration tests live under `tests/`. Run the full behavior suite with one
-entrypoint (covers print, mutate, meta, emit, init, tag, update, schema, and
-completion):
+entrypoint (covers print, mutate, meta, emit, init, tag, update, and schema):
 
 ```bash
 cargo build --release

@@ -3,8 +3,8 @@ mod format;
 pub use format::{Case, render};
 
 use crate::cmd::BumpError;
-use crate::print::{self, PrintOptions};
-use crate::version::{Version, VersionMode};
+use crate::print::{self, PrintSelection};
+use crate::version::Version;
 use std::fs;
 use std::path::Path;
 
@@ -28,7 +28,6 @@ pub enum Format {
 impl Format {
     const fn file_description(self) -> Option<&'static str> {
         match self {
-            // only called by write
             Self::CHeader => Some("C header file"),
             Self::Go => Some("Go source file"),
             Self::Java => Some("Java source file"),
@@ -40,12 +39,17 @@ impl Format {
 }
 
 #[derive(Debug, Clone)]
+pub struct BaseComponentField {
+    pub key: String,
+    pub case_name: String,
+    pub value: u32,
+}
+
+#[derive(Debug, Clone)]
 pub struct Fields {
     pub emit_prefix: String,
+    pub base_components: Vec<BaseComponentField>,
     pub case_prefix: String,
-    pub case_major: String,
-    pub case_minor: String,
-    pub case_patch: String,
     pub case_phase: String,
     pub case_phase_distance: String,
     pub case_string: String,
@@ -53,35 +57,36 @@ pub struct Fields {
     pub version_string: String,
     pub version_timestamp: String,
     pub version_prefix: String,
-    pub version_major: u32,
-    pub version_minor: u32,
-    pub version_patch: u32,
     pub version_phase: String,
     pub version_phase_distance: u32,
-    pub version_mode: VersionMode,
 }
 
 impl Fields {
     pub fn populate(emit_prefix: &str, case: Case, version: &Version) -> Result<Self, BumpError> {
+        let base_components = version
+            .base
+            .components
+            .iter()
+            .map(|(key, value)| BaseComponentField {
+                key: key.clone(),
+                case_name: case.apply(&format!("VERSION_{}", key.to_uppercase())),
+                value: u32::from(*value),
+            })
+            .collect();
+
         Ok(Self {
             emit_prefix: emit_prefix.to_string(),
+            base_components,
             case_prefix: case.apply("VERSION_PREFIX"),
-            case_major: case.apply("VERSION_MAJOR"),
-            case_minor: case.apply("VERSION_MINOR"),
-            case_patch: case.apply("VERSION_PATCH"),
             case_phase: case.apply("VERSION_PHASE"),
             case_phase_distance: case.apply("VERSION_PHASE_DISTANCE"),
             case_string: case.apply("VERSION_STRING"),
             case_timestamp: case.apply("VERSION_TIMESTAMP"),
-            version_string: print::to_string(version, &PrintOptions::default())?,
+            version_string: print::to_string(version, &PrintSelection::default())?,
             version_timestamp: version.timestamp.last.clone(),
             version_prefix: version.prefix.clone(),
-            version_major: version.base.major,
-            version_minor: version.base.minor.unwrap_or(0),
-            version_patch: version.base.patch.unwrap_or(0),
             version_phase: version.phase.name.clone(),
             version_phase_distance: version.phase.distance,
-            version_mode: version.base.mode,
         })
     }
 }

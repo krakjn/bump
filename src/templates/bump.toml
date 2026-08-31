@@ -7,11 +7,10 @@
 
 prefix = "v"
 
-# NOTE: some fields are modified by bump
-#   - mode: "semver" or "calver"
-#   - minor|patch: optional, can be removed if not needed
+# NOTE: define your own keys! (bump respects TOML order = cascade order)
+#   - at least one key is needed
+#   - special keys: "year", "month", "day" are populated based on current calendar date
 [base]
-mode = "semver"
 delimiter = "."
 major = 0
 minor = 1
