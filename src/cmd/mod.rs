@@ -2,14 +2,13 @@ mod changed;
 mod emit;
 mod init;
 mod meta;
-mod mutate;
+pub mod mutate;
 mod tag;
 mod update;
 
 pub use emit::emit;
 pub use init::init;
 pub use meta::meta;
-pub use mutate::{bump_type_from_phase, mutate};
 pub use tag::tag;
 pub use update::update;
 

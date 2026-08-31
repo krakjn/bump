@@ -1,6 +1,6 @@
 use crate::cmd::{BumpError, ensure_directory_exists};
 use crate::print::{self, PrintOptions};
-use crate::version::{Version, VersionMode};
+use crate::version::Version;
 use std::{
     fmt, fs, io,
     path::{Path, PathBuf},
@@ -84,45 +84,29 @@ fn set_optional_u32(
     Ok(())
 }
 
-fn set_required_u32(
-    table: &mut Table,
-    key: &str,
-    val: u32,
-    path: &Path,
-    section: &str,
-) -> Result<(), BumpError> {
-    let v = i64::from(val);
-    if !table.contains_key(key) {
-        table.insert(key, value(v));
-    } else {
-        set(table, key, v, section, path)?;
-    }
-    Ok(())
-}
+// fn set_required_u32(
+//     table: &mut Table,
+//     key: &str,
+//     val: u32,
+//     path: &Path,
+//     section: &str,
+// ) -> Result<(), BumpError> {
+//     let v = i64::from(val);
+//     if !table.contains_key(key) {
+//         table.insert(key, value(v));
+//     } else {
+//         set(table, key, v, section, path)?;
+//     }
+//     Ok(())
+// }
 
 fn write_base(doc: &mut DocumentMut, version: &Version, path: &Path) -> Result<(), BumpError> {
     let base = table_mut(doc, "base", path)?;
 
-    set(base, "mode", version.base.mode.as_str(), "base", path)?;
     set(base, "delimiter", &version.base.delimiter, "base", path)?;
 
-    match version.base.mode {
-        VersionMode::Calver => {
-            base.remove("major");
-            base.remove("minor");
-            base.remove("patch");
-            set_required_u32(base, "year", version.base.major, path, "base")?;
-            set_optional_u32(base, "month", version.base.minor, path, "base")?;
-            set_optional_u32(base, "day", version.base.patch, path, "base")?;
-        }
-        VersionMode::Semver => {
-            base.remove("year");
-            base.remove("month");
-            base.remove("day");
-            set_required_u32(base, "major", version.base.major, path, "base")?;
-            set_optional_u32(base, "minor", version.base.minor, path, "base")?;
-            set_optional_u32(base, "patch", version.base.patch, path, "base")?;
-        }
+    for (name, value) in version.base.components.iter() {
+        set(base, name, i64::from(*value), "base", path)?;
     }
     Ok(())
 }
@@ -268,37 +252,6 @@ impl BumpFile {
                 self.path.display()
             ))
         })
-    }
-
-    /// Warn when [base] keys don't match mode. Always returns `Ok` after printing.
-    pub fn mismatch(&self) -> Result<(), BumpError> {
-        let base = table(&self.doc, "base", &self.path)?;
-        let mode = base
-            .get("mode")
-            .and_then(|v| v.as_str())
-            .unwrap_or(VersionMode::Semver.as_str());
-
-        let (wrong, rewrite) = if mode == VersionMode::Calver.as_str() {
-            (
-                present_keys(base, SEMVER_KEYS),
-                "major/minor/patch → year/month/day",
-            )
-        } else {
-            (
-                present_keys(base, CALVER_KEYS),
-                "year/month/day → major/minor/patch",
-            )
-        };
-
-        if !wrong.is_empty() {
-            eprintln!(
-                "bump warning: [base].mode is {mode}, but found mismatched keys {wrong:?} in {}.\n\
-                 On save, keys will be rewritten ({rewrite}).",
-                self.path.display(),
-            );
-        }
-
-        Ok(())
     }
 
     pub fn save(&mut self, version: &Version) -> Result<(), BumpError> {

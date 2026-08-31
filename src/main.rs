@@ -1,4 +1,4 @@
-use crate::cmd::{BumpError, BumpType};
+use crate::cmd::BumpError;
 use crate::bumpfile::BumpFile;
 use clap_complete::aot::{Shell, generate};
 use std::process::ExitCode;
@@ -57,50 +57,29 @@ fn main() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
-    println!("help_requested: {help_requested}");
-    println!("bumpfile path: {}", bumpfile.path().display());
-    let components = collect_base_components(&bumpfile);
-    let mutate_cmds = cli::build_mutate_cmds(components);
-    
-    // for cmd in &mutate_cmds {
-    //     println!(
-    //         "{} — {}",
-    //         cmd.get_name(),
-    //         cmd.get_about()
-    //             .map(|s| s.to_string())
-    //             .unwrap_or_else(|| "(no about)".into()),
-    //     );
-    // }
-    // return ExitCode::SUCCESS;
-
-    let mut _cli = cli::cli(mutate_cmds.clone());
+    let base_components = collect_base_components(&bumpfile);
+    let mut _cli = cli::cli(base_components.clone());
     match _cli.get_matches().subcommand() {
         Some(("print", sub_matches)) => egress(print::print(sub_matches)),
-        // Some(("major", sub_matches)) => egress(cmd::mutate(sub_matches, BumpType::Major)),
-        // Some(("minor", sub_matches)) => egress(cmd::mutate(sub_matches, BumpType::Minor)),
-        // Some(("patch", sub_matches)) => egress(cmd::mutate(sub_matches, BumpType::Patch)),
-        Some(("calendar", sub_matches)) => egress(cmd::mutate(sub_matches, BumpType::Calendar)),
-        Some(("phase", sub_matches)) => {
-            let bump_type = cmd::bump_type_from_phase(sub_matches);
-            egress(cmd::mutate(sub_matches, bump_type))
-        }
         Some(("meta", sub_matches)) => egress(cmd::meta(sub_matches)),
         Some(("emit", sub_matches)) => egress(cmd::emit(sub_matches)),
         Some(("init", sub_matches)) => egress(cmd::init(sub_matches)),
         Some(("tag", sub_matches)) => egress(cmd::tag(sub_matches)),
         Some(("update", sub_matches)) => egress(cmd::update(sub_matches)),
-        Some(("completion", sub_matches)) => {
-            let shell = sub_matches
-                .get_one::<Shell>("shell")
-                .copied()
-                .expect("SHELL not provided");
-            let mut generate_cli = cli::cli(mutate_cmds);
-            generate(shell, &mut generate_cli, "bump", &mut std::io::stdout());
-            ExitCode::SUCCESS
+        // Some(("completion", sub_matches)) => {
+        //     let shell = sub_matches
+        //         .get_one::<Shell>("shell")
+        //         .copied()
+        //         .expect("SHELL not provided");
+        //     let mut generate_cli = cli::cli(base_components);
+        //     generate(shell, &mut generate_cli, "bump", &mut std::io::stdout());
+        //     ExitCode::SUCCESS
+        // }
+        Some(("phase", sub_matches)) => {
+            egress(cmd::mutate::phase(sub_matches))
         }
         Some((name, sub_matches)) if sub_matches.contains_id("mutate") => {
-            println!("GOT IT name: {name}");
-            ExitCode::SUCCESS
+            egress(cmd::mutate::base(sub_matches, name))
         }
         Some((name, _)) => {
             eprintln!("bump error >> unknown subcommand: {name}");
@@ -109,9 +88,8 @@ fn main() -> ExitCode {
         None => {
             eprintln!(
                 "{}",
-                BumpError::LogicError("No command provided. Try one below.".to_string())
+                BumpError::LogicError("No command provided. Try `bump --help`".to_string())
             );
-            let _ = cli::cli(mutate_cmds).print_help();
             ExitCode::FAILURE
         }
     }

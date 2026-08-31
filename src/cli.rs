@@ -1,5 +1,6 @@
 use crate::output::{Case, Format};
 use crate::version::SuffixMode;
+use crate::print::PrintValue;
 use clap::builder::StyledStr;
 use clap::builder::styling::{AnsiColor, Styles};
 use clap::{Arg, ArgGroup, Command, value_parser};
@@ -25,8 +26,6 @@ fn root_usage() -> StyledStr {
     usage
 }
 
-const MUTATE_GROUP: &str = "mutate";
-
 fn bumpfile_arg() -> Arg {
     Arg::new("bumpfile")
         .value_name("BUMPFILE")
@@ -36,76 +35,61 @@ fn bumpfile_arg() -> Arg {
         .help("Path to the configuration file")
 }
 
-fn mutate_bumpfile_arg() -> Arg {
-    bumpfile_arg().group(MUTATE_GROUP)
+fn if_changed_from_arg() -> Arg {
+    Arg::new("if-changed-from")
+        .long("if-changed-from")
+        .value_name("TREEISH")
+        .value_parser(clap::value_parser!(String))
+        .allow_hyphen_values(true)
+        .num_args(1)
+        .help("Skip bump if the bumpfile directory did not change from TREEISH to HEAD")
 }
 
-fn semver_mutate_cmd(name: impl Into<String>, about: impl Into<String>) -> Command {
+fn base_cmd(name: impl Into<String>, about: impl Into<String>) -> Command {
     Command::new(name.into())
         .about(about.into())
-        .arg(
-            Arg::new("if-changed-from")
-                .long("if-changed-from")
-                .value_name("TREEISH")
-                .value_parser(clap::value_parser!(String))
-                .allow_hyphen_values(true)
-                .num_args(1)
-                .group(MUTATE_GROUP)
-                .help("Skip bump if the bumpfile directory did not change from TREEISH to HEAD"),
-        )
-        .arg(mutate_bumpfile_arg())
-        .group(
-            ArgGroup::new(MUTATE_GROUP).args(["if-changed-from", "bumpfile"]),
-        )
+        .arg(if_changed_from_arg())
+        .arg(bumpfile_arg())
+        .group(ArgGroup::new("mutate"))
 }
 
-pub fn build_mutate_cmds(parsed_cmds: Vec<(String, u16)>) -> Vec<Command> {
-    parsed_cmds.into_iter().map(|cmd| {
-        semver_mutate_cmd(cmd.0.clone(), format!("Increment {} version", cmd.0))
+pub fn build_base_cmds(base_components: Vec<(String, u16)>) -> Vec<Command> {
+    base_components.into_iter().map(|(name, _value)| {
+        base_cmd(name.clone(), format!("Increment {} version", name))
     }).collect()
 }
 
 fn print_args() -> Vec<Arg> {
     vec![
-        Arg::new("only-prefix")
-            .long("only-prefix")
-            .action(clap::ArgAction::SetTrue)
-            .group("print-exclusive")
-            .help("Print [prefix]"),
-        Arg::new("only-phase")
-            .long("only-phase")
-            .action(clap::ArgAction::SetTrue)
-            .group("print-exclusive")
-            .help("Print [phase]"),
-        Arg::new("only-base")
-            .long("only-base")
-            .action(clap::ArgAction::SetTrue)
-            .group("print-exclusive")
-            .help("Print [base]"),
-        Arg::new("no-prefix")
-            .long("no-prefix")
-            .action(clap::ArgAction::SetTrue)
-            .help("Print [base][phase]"),
-        Arg::new("no-phase")
-            .long("no-phase")
-            .action(clap::ArgAction::SetTrue)
-            .help("Print [prefix][base]"),
-        Arg::new("with-suffix")
-            .long("with-suffix")
-            .action(clap::ArgAction::SetTrue)
-            .help("Print [prefix][base][phase][suffix]"),
-        Arg::new("with-timestamp")
-            .long("with-timestamp")
-            .action(clap::ArgAction::SetTrue)
-            .help("Print [prefix][base][phase][timestamp]"),
         Arg::new("full")
             .long("full")
             .action(clap::ArgAction::SetTrue)
-            .help("Print full output; overrides all print flags except --with-label"),
-        Arg::new("with-label")
-            .long("with-label")
+            .help("Print full version (all components)"),
+        Arg::new("semver")
+            .long("semver")
+            .action(clap::ArgAction::SetTrue)
+            .help("Print semver compatible version (first three base components)"),
+        Arg::new("with")
+            .long("with")
+            .value_name("OPTION")
+            .value_parser(value_parser!(PrintValue))
+            .action(clap::ArgAction::Append)
+            .help("Print [OPTION [, OPTION2, ..]]"),
+        Arg::new("without")
+            .long("without")
+            .value_name("OPTION")
+            .value_parser(value_parser!(PrintValue))
+            .action(clap::ArgAction::Append)
+            .help("Print [OPTION [, OPTION2, ..]]"),
+        Arg::new("only")
+            .long("only")
+            .value_name("OPTION")
+            .value_parser(value_parser!(PrintValue))
+            .num_args(1)
+            .help("Print OPTION"),
+        Arg::new("label")
+            .long("label")
             .value_name("LABEL")
-            .allow_hyphen_values(true)
             .value_parser(clap::value_parser!(String))
             .num_args(1)
             .help("Inject LABEL at [label].position (not persisted)"),
@@ -113,17 +97,17 @@ fn print_args() -> Vec<Arg> {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn cli(mutate_cmds: Vec<clap::Command>) -> Command {
+pub fn cli(base_components: Vec<(String, u16)>) -> Command {
     let print_flags = print_args();
     
-    let mutate_cmds = if mutate_cmds.is_empty() {
+    let base_cmds = if base_components.is_empty() {
         vec![
-            semver_mutate_cmd("major", "Increment major version"),
-            semver_mutate_cmd("minor", "Increment minor version"),
-            semver_mutate_cmd("patch", "Increment patch version"),
+            base_cmd("major", "Increment major version"),
+            base_cmd("minor", "Increment minor version"),
+            base_cmd("patch", "Increment patch version"),
         ]
     } else {
-        mutate_cmds
+        build_base_cmds(base_components)
     };
 
     Command::new("bump")
@@ -140,10 +124,11 @@ pub fn cli(mutate_cmds: Vec<clap::Command>) -> Command {
                 .args(print_flags)
                 .arg(bumpfile_arg()),
         )
-        .subcommands(mutate_cmds)
+        .subcommands(base_cmds)
         .subcommand(
             Command::new("phase")
                 .about("Increment phase distance, or set phase name and reset distance")
+                .arg(if_changed_from_arg())
                 .arg(
                     Arg::new("name")
                         .value_name("NAME")
@@ -153,12 +138,6 @@ pub fn cli(mutate_cmds: Vec<clap::Command>) -> Command {
                         .allow_hyphen_values(true)
                         .help("Phase name to set (omit to increment distance)"),
                 )
-                .arg(bumpfile_arg()),
-        )
-        .subcommand(
-            Command::new("calendar")
-                .about("Update version based on current calendar date")
-                .alias("cal")
                 .arg(bumpfile_arg()),
         )
         .subcommand(
