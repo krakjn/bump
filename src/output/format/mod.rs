@@ -214,6 +214,32 @@ mod tests {
     }
 
     #[test]
+    fn populate_custom_key_alpha() {
+        let mut version = Version::test_fixture();
+        version.base.components = vec![("alpha".to_string(), 2)];
+        let fields = Fields::populate("", Case::Uppercase, &version).unwrap();
+        assert_eq!(fields.base_components.len(), 1);
+        assert_eq!(fields.base_components[0].key, "alpha");
+        assert_eq!(fields.base_components[0].case_name, "VERSION_ALPHA");
+        assert_eq!(fields.base_components[0].value, 2);
+    }
+
+    #[test]
+    fn populate_mixed_year_then_alpha_order() {
+        let mut version = Version::test_fixture();
+        version.base.components = vec![
+            ("year".to_string(), 2026),
+            ("alpha".to_string(), 1),
+        ];
+        let fields = Fields::populate("", Case::Uppercase, &version).unwrap();
+        assert_eq!(fields.base_components[0].case_name, "VERSION_YEAR");
+        assert_eq!(fields.base_components[1].case_name, "VERSION_ALPHA");
+        let pairs = nested_pairs(&fields);
+        assert_eq!(pairs[1], ("year".to_string(), "2026".to_string()));
+        assert_eq!(pairs[2], ("alpha".to_string(), "1".to_string()));
+    }
+
+    #[test]
     fn json_escape_quotes() {
         assert_eq!(json_escape(r#"say "hi""#), r#""say \"hi\"""#);
     }

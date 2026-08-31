@@ -1,4 +1,4 @@
 prefix = "v"
 
 [[base]]
-mode = "semver"
+delimiter = "."

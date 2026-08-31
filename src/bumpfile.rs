@@ -92,7 +92,7 @@ fn parse_base_components(
     let delimiter = str_field(table, "delimiter", "base", path)?;
     let mut components = Vec::new();
     for (key, value) in table.iter() {
-        if BASE_RESERVED.contains(&key.as_ref()) {
+        if BASE_RESERVED.contains(&key) {
             continue;
         }
         let n = value.as_integer().ok_or_else(|| {
@@ -319,17 +319,10 @@ impl BumpFile {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
-    #[test]
-    fn parse_base_preserves_toml_order() {
-        let content = r#"
-prefix = "v"
-
-[base]
-delimiter = "."
-alpha = 2
-beta = 0
-
+    fn tables_after_base() -> &'static str {
+        r#"
 [phase]
 separator = "-"
 name = ""
@@ -341,15 +334,176 @@ mode = "git_sha"
 separator = "+"
 
 [timestamp]
+format = "%Y-%m-%d %H:%M:%S %Z"
+last = "2026-01-01 00:00:00 UTC"
+
+[label]
+position = "after-base"
+"#
+    }
+
+    fn write_bumpfile(body: &str) -> (tempfile::TempDir, PathBuf) {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("bump.toml");
+        fs::write(&path, body).unwrap();
+        (dir, path)
+    }
+
+    fn parse_err(path: &Path) -> String {
+        match BumpFile::parse(path) {
+            Ok(_) => panic!("expected parse error for {}", path.display()),
+            Err(err) => err.to_string(),
+        }
+    }
+
+    fn version_err(path: &Path) -> String {
+        match BumpFile::parse(path).unwrap().version() {
+            Ok(_) => panic!("expected version error for {}", path.display()),
+            Err(err) => err.to_string(),
+        }
+    }
+
+    #[test]
+    fn parse_base_preserves_toml_order_and_skips_reserved() {
+        let content = r#"
+prefix = "v"
+
+[base]
+mode = "semver"
+delimiter = "."
+year = 2026
+alpha = 2
+month = 4
+beta = 1
+"#;
+        let doc: DocumentMut = content.parse().unwrap();
+        let path = Path::new("test.toml");
+        let (_, components) =
+            parse_base_components(doc.get("base").unwrap().as_table().unwrap(), path).unwrap();
+        assert_eq!(
+            components,
+            vec![
+                ("year".to_string(), 2026),
+                ("alpha".to_string(), 2),
+                ("month".to_string(), 4),
+                ("beta".to_string(), 1),
+            ]
+        );
+    }
+
+    #[test]
+    fn parse_version_save_roundtrip() {
+        let body = format!(
+            "prefix = \"v-\"\n\n[base]\ndelimiter = \".\"\nmajor = 0\nminor = 1\npatch = 0\n{}",
+            tables_after_base()
+        );
+        let (_dir, path) = write_bumpfile(&body);
+        let mut bumpfile = BumpFile::parse(&path).unwrap();
+        let mut version = bumpfile.version().unwrap();
+        assert_eq!(version.prefix, "v-");
+        assert_eq!(
+            version.base.components,
+            vec![
+                ("major".to_string(), 0),
+                ("minor".to_string(), 1),
+                ("patch".to_string(), 0),
+            ]
+        );
+        version.bump("minor").unwrap();
+        bumpfile.save(&version).unwrap();
+
+        let reloaded = BumpFile::parse(&path).unwrap().version().unwrap();
+        assert_eq!(
+            reloaded.base.components,
+            vec![
+                ("major".to_string(), 0),
+                ("minor".to_string(), 2),
+                ("patch".to_string(), 0),
+            ]
+        );
+    }
+
+    #[test]
+    fn missing_base_table() {
+        let body = format!("prefix = \"v\"\n{}", tables_after_base());
+        let (_dir, path) = write_bumpfile(&body);
+        let err = parse_err(&path);
+        assert!(err.contains("'base' table not found"), "{err}");
+    }
+
+    #[test]
+    fn missing_prefix() {
+        let body = format!(
+            "[base]\ndelimiter = \".\"\nmajor = 0\n{}",
+            tables_after_base()
+        );
+        let (_dir, path) = write_bumpfile(&body);
+        let err = version_err(&path);
+        assert!(
+            err.contains("Expected key 'prefix' not found in [(root)]"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn non_integer_component() {
+        let body = format!(
+            "prefix = \"v\"\n\n[base]\ndelimiter = \".\"\nalpha = \"nope\"\n{}",
+            tables_after_base()
+        );
+        let (_dir, path) = write_bumpfile(&body);
+        let err = parse_err(&path);
+        assert!(err.contains("Expected integer for [base].alpha"), "{err}");
+    }
+
+    #[test]
+    fn bad_suffix_mode() {
+        let body = r#"
+prefix = "v"
+
+[base]
+delimiter = "."
+major = 0
+
+[phase]
+separator = "-"
+name = ""
+delimiter = "."
+distance = 0
+
+[suffix]
+mode = "nope"
+separator = "+"
+
+[timestamp]
 format = "%Y"
 last = "2020"
 
 [label]
 position = "after-base"
 "#;
-        let doc: DocumentMut = content.parse().unwrap();
-        let path = Path::new("test.toml");
-        let (_, components) = parse_base_components(doc.get("base").unwrap().as_table().unwrap(), path).unwrap();
-        assert_eq!(components, vec![("alpha".to_string(), 2), ("beta".to_string(), 0)]);
+        let (_dir, path) = write_bumpfile(body);
+        let err = version_err(&path);
+        assert!(
+            err.contains("Invalid suffix mode 'nope' (expected 'git_sha' or 'branch')"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn bad_label_position() {
+        let body = format!(
+            "prefix = \"v\"\n\n[base]\ndelimiter = \".\"\nmajor = 0\n{}",
+            tables_after_base().replace("after-base", "middle")
+        );
+        let (_dir, path) = write_bumpfile(&body);
+        let err = version_err(&path);
+        assert!(err.contains("Invalid label position 'middle'"), "{err}");
+    }
+
+    #[test]
+    fn missing_file() {
+        let err = parse_err(Path::new("/tmp/bump-does-not-exist-xyz.toml"));
+        assert!(err.contains("Configuration file not found"), "{err}");
     }
 }

@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-# Behavior: no subcommand UX.
+# Behavior: no-subcommand UX and help lists bumpfile keys.
 
 source "$(dirname "$0")/lib.sh"
 
@@ -23,11 +23,24 @@ if [[ "$output" != *"bump error >> No command provided"* ]]; then
     echo "got: $output"
     exit 1
 fi
-if [[ "$output" != *"Usage:"* ]]; then
-    echo "expected help output"
+if [[ "$output" != *"bump --help"* ]]; then
+    echo "expected hint to run bump --help"
+    echo "got: $output"
     exit 1
 fi
 echo "ok"
 echo
+
+section "Help lists keys from bumpfile"
+
+setup_semver
+assert_contains "cli/help/patch" "patch" --help
+
+setup_calver
+assert_contains "cli/help/year" "year" --help
+
+setup_mixed
+assert_contains "cli/help/mixed-alpha" "alpha" --help
+assert_contains "cli/help/mixed-year" "year" --help
 
 echo "All cli tests passed."

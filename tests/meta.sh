@@ -23,11 +23,11 @@ section "meta --suffix"
 setup_semver "v-"
 assert_bumpfile_report "meta/suffix/git-sha" "updated" meta --suffix git_sha
 refresh_metadata
-assert_eq "meta/suffix/git-sha-with-suffix" "v-0.1.0+${GIT_SHA}" p --with-suffix
+assert_eq "meta/suffix/git-sha-with-suffix" "v-0.1.0+${GIT_SHA}" p --with suffix
 
 branch="$(git rev-parse --abbrev-ref HEAD)"
 assert_bumpfile_report "meta/suffix/branch" "updated" meta --suffix branch
-assert_eq "meta/suffix/branch-with-suffix" "v-0.1.0+${branch}" p --with-suffix
+assert_eq "meta/suffix/branch-with-suffix" "v-0.1.0+${branch}" p --with suffix
 
 section "meta combined flags"
 

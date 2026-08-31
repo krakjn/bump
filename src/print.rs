@@ -36,11 +36,11 @@ impl PrintSelection {
 
 fn selection_from_matches(matches: &ArgMatches) -> PrintSelection {
     let mut selection = PrintSelection::default();
+    selection.semver = matches.get_flag("semver");
     if matches.get_flag("full") {
         selection.full = true;
         return selection;
     }
-    selection.semver = matches.get_flag("semver");
     if let Some(args) = matches.get_many::<PrintValue>("with") {
         selection.with.extend(args.copied());
     }
@@ -132,12 +132,7 @@ impl Components {
         }
     }
 
-    fn default(version: &Version) -> Result<Self, BumpError> {
-        let suffix_value = if is_git_repository() {
-            suffix(version)?
-        } else {
-            String::new()
-        };
+    fn default(version: &Version, selection: &PrintSelection) -> Result<Self, BumpError> {
         Ok(Self {
             prefix: Field {
                 active: true,
@@ -145,7 +140,7 @@ impl Components {
             },
             base: Field {
                 active: true,
-                value: base(version),
+                value: base(version, selection.semver),
             },
             phase: Field {
                 active: true,
@@ -153,7 +148,7 @@ impl Components {
             },
             suffix: Field {
                 active: false,
-                value: suffix_value,
+                value: String::new(),
             },
             timestamp: Field {
                 active: false,
@@ -183,6 +178,9 @@ impl Components {
         }
 
         if let Some(only) = selection.only {
+            if only == PrintValue::Suffix {
+                return Ok(Some(suffix(version)?));
+            }
             return Ok(Some(self.field(only).value.clone()));
         }
 
@@ -231,23 +229,29 @@ impl Components {
 }
 
 pub fn to_string(version: &Version, selection: &PrintSelection) -> Result<String, BumpError> {
-    let mut components = Components::default(version)?;
+    let mut components = Components::default(version, selection)?;
     if let Some(segment) = components.apply(version, selection)? {
         return Ok(segment);
     }
     Ok(components.collect())
 }
 
-fn base(version: &Version) -> String {
+fn base(version: &Version, semver: bool) -> String {
+    let components = if semver {
+        let n = version.base.components.len().min(3);
+        &version.base.components[..n]
+    } else {
+        &version.base.components[..]
+    };
     let mut output = String::new();
-    for (index, (name, value)) in version.base.components.iter().enumerate() {
+    for (index, (name, value)) in components.iter().enumerate() {
         match name.as_str() {
             "year" => output.push_str(&format!("{value:04}")),
             "month" => output.push_str(&format!("{value:02}")),
             "day" => output.push_str(&format!("{value:02}")),
             _ => output.push_str(&value.to_string()),
         }
-        if index != version.base.components.len() - 1 {
+        if index != components.len() - 1 {
             output.push_str(&version.base.delimiter);
         }
     }
@@ -291,17 +295,211 @@ fn suffix(version: &Version) -> Result<String, BumpError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
+    use std::path::Path;
+    use std::sync::Mutex;
+
+    static CWD_LOCK: Mutex<()> = Mutex::new(());
+
+    fn print_eq(version: &Version, selection: PrintSelection, expected: &str) {
+        assert_eq!(to_string(version, &selection).unwrap(), expected);
+    }
+
+    fn with_temp_cwd<T>(f: impl FnOnce() -> T) -> T {
+        let _guard = CWD_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let orig = env::current_dir().unwrap();
+        env::set_current_dir(dir.path()).unwrap();
+        struct Restore(std::path::PathBuf);
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                let _ = env::set_current_dir(&self.0);
+            }
+        }
+        let _restore = Restore(orig);
+        f()
+    }
+
+    fn mixed_version() -> Version {
+        let mut version = Version::test_fixture();
+        version.prefix = "v".to_string();
+        version.base.components = vec![
+            ("year".to_string(), 2026),
+            ("alpha".to_string(), 3),
+            ("month".to_string(), 4),
+            ("beta".to_string(), 1),
+        ];
+        version
+    }
 
     #[test]
-    fn only_base_returns_base_without_newline() {
-        let out = to_string(
-            &Version::test_fixture(),
-            &PrintSelection {
+    fn default_compose() {
+        print_eq(&Version::test_fixture(), PrintSelection::default(), "v-0.1.0");
+    }
+
+    #[test]
+    fn mixed_compose_pads_only_date_keys() {
+        print_eq(&mixed_version(), PrintSelection::default(), "v2026.3.04.1");
+    }
+
+    #[test]
+    fn semver_prints_first_three_base_components() {
+        print_eq(
+            &mixed_version(),
+            PrintSelection {
+                semver: true,
+                ..PrintSelection::default()
+            },
+            "v2026.3.04",
+        );
+    }
+
+    #[test]
+    fn semver_only_base_drops_later_keys() {
+        print_eq(
+            &mixed_version(),
+            PrintSelection {
+                semver: true,
                 only: Some(PrintValue::Base),
                 ..PrintSelection::default()
             },
-        )
-        .unwrap();
-        assert_eq!(out, "0.1.0");
+            "2026.3.04",
+        );
+    }
+
+    #[test]
+    fn semver_keeps_prefix_and_phase() {
+        let mut version = mixed_version();
+        version.phase.name = "beta".to_string();
+        version.phase.distance = 1;
+        print_eq(
+            &version,
+            PrintSelection {
+                semver: true,
+                ..PrintSelection::default()
+            },
+            "v2026.3.04-beta.1",
+        );
+    }
+
+    #[test]
+    fn semver_with_fewer_than_three_keys_prints_all() {
+        let mut version = Version::test_fixture();
+        version.base.components = vec![("alpha".to_string(), 2), ("beta".to_string(), 9)];
+        print_eq(
+            &version,
+            PrintSelection {
+                semver: true,
+                ..PrintSelection::default()
+            },
+            "v-2.9",
+        );
+    }
+
+    #[test]
+    fn only_base_returns_base_without_newline() {
+        print_eq(
+            &Version::test_fixture(),
+            PrintSelection {
+                only: Some(PrintValue::Base),
+                ..PrintSelection::default()
+            },
+            "0.1.0",
+        );
+    }
+
+    #[test]
+    fn only_prefix() {
+        print_eq(
+            &Version::test_fixture(),
+            PrintSelection {
+                only: Some(PrintValue::Prefix),
+                ..PrintSelection::default()
+            },
+            "v-",
+        );
+    }
+
+    #[test]
+    fn without_prefix() {
+        print_eq(
+            &Version::test_fixture(),
+            PrintSelection {
+                without: HashSet::from([PrintValue::Prefix]),
+                ..PrintSelection::default()
+            },
+            "0.1.0",
+        );
+    }
+
+    #[test]
+    fn with_timestamp_does_not_need_git() {
+        with_temp_cwd(|| {
+            assert!(!Path::new(".git").exists());
+            print_eq(
+                &Version::test_fixture(),
+                PrintSelection {
+                    with: HashSet::from([PrintValue::Timestamp]),
+                    ..PrintSelection::default()
+                },
+                "v-0.1.0  2026-01-01 00:00:00 UTC",
+            );
+        });
+    }
+
+    #[test]
+    fn with_suffix_errors_outside_git() {
+        with_temp_cwd(|| {
+            let err = to_string(
+                &Version::test_fixture(),
+                &PrintSelection {
+                    with: HashSet::from([PrintValue::Suffix]),
+                    ..PrintSelection::default()
+                },
+            )
+            .unwrap_err();
+            assert!(err.to_string().contains("Not a git repository"));
+        });
+    }
+
+    #[test]
+    fn full_errors_outside_git() {
+        with_temp_cwd(|| {
+            let err = to_string(
+                &Version::test_fixture(),
+                &PrintSelection {
+                    full: true,
+                    ..PrintSelection::default()
+                },
+            )
+            .unwrap_err();
+            assert!(err.to_string().contains("Not a git repository"));
+        });
+    }
+
+    #[test]
+    fn label_at_each_position() {
+        let mut version = Version::test_fixture();
+        version.phase.name = "beta".to_string();
+        version.phase.distance = 1;
+        let cases = [
+            (LabelPosition::BeforePrefix, "-tigerv-0.1.0-beta.1"),
+            (LabelPosition::AfterPrefix, "v--tiger0.1.0-beta.1"),
+            (LabelPosition::BeforeBase, "v--tiger0.1.0-beta.1"),
+            (LabelPosition::AfterBase, "v-0.1.0-tiger-beta.1"),
+            (LabelPosition::BeforePhase, "v-0.1.0-tiger-beta.1"),
+            (LabelPosition::AfterPhase, "v-0.1.0-beta.1-tiger"),
+        ];
+        for (position, expected) in cases {
+            version.label.position = position;
+            print_eq(
+                &version,
+                PrintSelection {
+                    label: Some("-tiger".to_string()),
+                    ..PrintSelection::default()
+                },
+                expected,
+            );
+        }
     }
 }

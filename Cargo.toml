@@ -20,3 +20,6 @@ path = "src/main.rs"
 chrono = { version = "0.4.42", features = ["clock"] }
 clap = { version = "4", features = ["derive", "string"] }
 toml_edit = "0.23"
+
+[dev-dependencies]
+tempfile = "3"

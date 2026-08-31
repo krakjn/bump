@@ -62,34 +62,41 @@ fn print_args() -> Vec<Arg> {
         Arg::new("full")
             .long("full")
             .action(clap::ArgAction::SetTrue)
+            .display_order(1)
             .help("Print full version (all components)"),
         Arg::new("semver")
             .long("semver")
             .action(clap::ArgAction::SetTrue)
-            .help("Print semver compatible version (first three base components)"),
+            .display_order(2)
+            .help("Print first three base components (semver-compatible)"),
         Arg::new("with")
             .long("with")
             .value_name("OPTION")
             .value_parser(value_parser!(PrintValue))
             .action(clap::ArgAction::Append)
+            .display_order(3)
             .help("Print [OPTION [, OPTION2, ..]]"),
         Arg::new("without")
             .long("without")
             .value_name("OPTION")
             .value_parser(value_parser!(PrintValue))
             .action(clap::ArgAction::Append)
+            .display_order(4)
             .help("Print [OPTION [, OPTION2, ..]]"),
         Arg::new("only")
             .long("only")
             .value_name("OPTION")
             .value_parser(value_parser!(PrintValue))
             .num_args(1)
+            .display_order(5)
             .help("Print OPTION"),
         Arg::new("label")
             .long("label")
             .value_name("LABEL")
             .value_parser(clap::value_parser!(String))
+            .allow_hyphen_values(true)
             .num_args(1)
+            .display_order(6)
             .help("Inject LABEL at [label].position (not persisted)"),
     ]
 }

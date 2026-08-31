@@ -38,19 +38,18 @@ cargo build
 # binary: target/debug/bump
 ```
 
-Integration tests require a release build (see below).
+A debug binary is enough for the CLI suites (`target/debug/bump`).
 
 ### Running Tests
 
-Integration tests live under `tests/`. Run the full behavior suite with one
-entrypoint (covers print, mutate, meta, emit, init, tag, update, and schema):
+Logic lives in `cargo test`. CLI contracts live under `tests/`. One entrypoint
+runs both (skips `cargo test` when `BUMP_BIN` is set, e.g. CI):
 
 ```bash
-cargo build --release
-./tests/run.sh
+cargo test && ./tests/run.sh
 ```
 
-When testing a cross-compiled binary, set `BUMP_BIN` to the built artifact path:
+When testing a foreign or cross-compiled binary, set `BUMP_BIN` to the artifact:
 
 ```bash
 cargo build --release --target x86_64-unknown-linux-musl
@@ -59,9 +58,9 @@ BUMP_BIN=target/x86_64-unknown-linux-musl/release/bump ./tests/run.sh
 
 Suites run in isolated temp workspaces and do not modify a repo-root `bump.toml`.
 
-CI runs `./tests/run.sh` on native (non-cross-compiled) Linux and macOS jobs after
-`cargo build --release --target <triple>`, with `BUMP_BIN` set to
-`target/<triple>/release/bump`.
+CI runs `cargo test` then `./tests/run.sh` on native (non-cross-compiled) Linux
+and macOS jobs after `cargo build --release --target <triple>`, with `BUMP_BIN`
+set to `target/<triple>/release/bump`.
 
 ## Project Structure
 
@@ -95,7 +94,7 @@ bump/
 
 1. Create a feature branch
 1. Make your changes
-1. Run `./tests/run.sh` to ensure everything works
+1. Run `cargo test && ./tests/run.sh` to ensure everything works
 1. Submit a pull request
 
 ## Questions?
