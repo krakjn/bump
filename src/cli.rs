@@ -2,7 +2,7 @@ use crate::output::{Case, Format};
 use crate::version::SuffixMode;
 use clap::builder::StyledStr;
 use clap::builder::styling::{AnsiColor, Styles};
-use clap::{Arg, Command, value_parser};
+use clap::{Arg, ArgGroup, Command, value_parser};
 use clap_complete::aot::Shell;
 use std::fmt::Write;
 
@@ -25,6 +25,8 @@ fn root_usage() -> StyledStr {
     usage
 }
 
+const MUTATE_GROUP: &str = "mutate";
+
 fn bumpfile_arg() -> Arg {
     Arg::new("bumpfile")
         .value_name("BUMPFILE")
@@ -34,18 +36,33 @@ fn bumpfile_arg() -> Arg {
         .help("Path to the configuration file")
 }
 
-fn semver_mutate_cmd(name: &'static str, about: &'static str) -> Command {
-    Command::new(name)
-        .about(about)
-        .arg(Arg::new("if-changed-from")
-            .long("if-changed-from")
-            .value_name("TREEISH")
-            .value_parser(clap::value_parser!(String))
-            .allow_hyphen_values(true)
-            .num_args(1)
-            .help("Skip bump if the bumpfile directory did not change from TREEISH to HEAD"),
+fn mutate_bumpfile_arg() -> Arg {
+    bumpfile_arg().group(MUTATE_GROUP)
+}
+
+fn semver_mutate_cmd(name: impl Into<String>, about: impl Into<String>) -> Command {
+    Command::new(name.into())
+        .about(about.into())
+        .arg(
+            Arg::new("if-changed-from")
+                .long("if-changed-from")
+                .value_name("TREEISH")
+                .value_parser(clap::value_parser!(String))
+                .allow_hyphen_values(true)
+                .num_args(1)
+                .group(MUTATE_GROUP)
+                .help("Skip bump if the bumpfile directory did not change from TREEISH to HEAD"),
         )
-        .arg(bumpfile_arg())
+        .arg(mutate_bumpfile_arg())
+        .group(
+            ArgGroup::new(MUTATE_GROUP).args(["if-changed-from", "bumpfile"]),
+        )
+}
+
+pub fn build_mutate_cmds(parsed_cmds: Vec<(String, u16)>) -> Vec<Command> {
+    parsed_cmds.into_iter().map(|cmd| {
+        semver_mutate_cmd(cmd.0.clone(), format!("Increment {} version", cmd.0))
+    }).collect()
 }
 
 fn print_args() -> Vec<Arg> {
@@ -96,8 +113,18 @@ fn print_args() -> Vec<Arg> {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn cli() -> Command {
+pub fn cli(mutate_cmds: Vec<clap::Command>) -> Command {
     let print_flags = print_args();
+    
+    let mutate_cmds = if mutate_cmds.is_empty() {
+        vec![
+            semver_mutate_cmd("major", "Increment major version"),
+            semver_mutate_cmd("minor", "Increment minor version"),
+            semver_mutate_cmd("patch", "Increment patch version"),
+        ]
+    } else {
+        mutate_cmds
+    };
 
     Command::new("bump")
         .styles(HELP_STYLES)
@@ -113,9 +140,7 @@ pub fn cli() -> Command {
                 .args(print_flags)
                 .arg(bumpfile_arg()),
         )
-        .subcommand(semver_mutate_cmd("major", "Increment major version"))
-        .subcommand(semver_mutate_cmd("minor", "Increment minor version"))
-        .subcommand(semver_mutate_cmd("patch", "Increment patch version"))
+        .subcommands(mutate_cmds)
         .subcommand(
             Command::new("phase")
                 .about("Increment phase distance, or set phase name and reset distance")

@@ -11,7 +11,7 @@ const INIT_TEMPLATE_TIMESTAMP: &str = "1970-01-01 00:00:00 UTC";
 
 pub struct BumpFile {
     path: PathBuf,
-    doc: DocumentMut,
+    pub doc: DocumentMut,
 }
 
 fn bumpfile_parse_error(path: &Path, message: impl fmt::Display) -> BumpError {

@@ -21,15 +21,6 @@ use std::{
     process::Command as ProcessCommand,
 };
 
-pub enum BumpType {
-    Major,
-    Minor,
-    Patch,
-    PhaseSet(String),
-    PhaseIncrement,
-    Calendar,
-}
-
 #[derive(Debug)]
 pub enum BumpError {
     IoError(io::Error),

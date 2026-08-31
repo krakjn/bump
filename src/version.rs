@@ -1,29 +1,8 @@
-use crate::cmd::{BumpError, BumpType};
+use crate::cmd::BumpError;
 use chrono::Datelike;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum VersionMode {
-    Semver,
-    Calver,
-}
-
-impl VersionMode {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Semver => "semver",
-            Self::Calver => "calver",
-        }
-    }
-}
-
-impl fmt::Display for VersionMode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "snake_case")]
@@ -81,19 +60,9 @@ pub struct Timestamp {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Base {
-    pub mode: VersionMode,
     pub delimiter: String,
-
-    #[serde(alias = "year")]
-    pub major: u32,
-
-    #[serde(alias = "month")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub minor: Option<u32>,
-
-    #[serde(alias = "day")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub patch: Option<u32>,
+    // use BTreeMap to store in order
+    pub components: BTreeMap<String, u16>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -126,17 +95,6 @@ pub struct Version {
 }
 
 impl Version {
-    fn right_mode(&self, expected_mode: VersionMode) -> Result<(), BumpError> {
-        if self.base.mode == expected_mode {
-            Ok(())
-        } else {
-            Err(BumpError::LogicError(format!(
-                "Operation only valid for base.mode = '{}'",
-                expected_mode.as_str()
-            )))
-        }
-    }
-
     fn clear_phase(&mut self) {
         self.phase.name = String::new();
         self.phase.distance = 0;
