@@ -12,7 +12,7 @@ pub enum PrintValue {
     Timestamp,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PrintSelection {
     pub full: bool,
     pub semver: bool,
@@ -23,6 +23,28 @@ pub struct PrintSelection {
 }
 
 impl PrintSelection {
+    pub fn default() -> Self {
+        Self {
+            full: false,
+            semver: false,
+            with: HashSet::new(),
+            without: HashSet::new(),
+            only: None,
+            label: None,
+        }
+    }
+
+    fn from_matches(matches: &ArgMatches) -> Self {
+        Self {
+            full: matches.get_flag("full"),
+            semver: matches.get_flag("semver"),
+            with: print_values(matches, "with"),
+            without: print_values(matches, "without"),
+            only: matches.get_one::<PrintValue>("only").copied(),
+            label: matches.get_one::<String>("label").cloned(),
+        }
+    }
+
     pub fn without_prefix(mut self) -> Self {
         self.without.insert(PrintValue::Prefix);
         self
@@ -34,28 +56,19 @@ impl PrintSelection {
     }
 }
 
-fn selection_from_matches(matches: &ArgMatches) -> PrintSelection {
-    let mut selection = PrintSelection::default();
-    selection.semver = matches.get_flag("semver");
-    if matches.get_flag("full") {
-        selection.full = true;
-        return selection;
-    }
-    if let Some(args) = matches.get_many::<PrintValue>("with") {
-        selection.with.extend(args.copied());
-    }
-    if let Some(args) = matches.get_many::<PrintValue>("without") {
-        selection.without.extend(args.copied());
-    }
-    selection.only = matches.get_one::<PrintValue>("only").copied();
-    selection.label = matches.get_one::<String>("label").cloned();
-    selection
+fn print_values(matches: &ArgMatches, name: &str) -> HashSet<PrintValue> {
+    matches
+        .get_many::<PrintValue>(name)
+        .into_iter()
+        .flatten()
+        .copied()
+        .collect()
 }
 
 pub fn print(matches: &ArgMatches) -> Result<(), BumpError> {
     let bumpfile = load_bumpfile(matches)?;
     let version = bumpfile.version()?;
-    let selection = selection_from_matches(matches);
+    let selection = PrintSelection::from_matches(matches);
     print!("{}", to_string(&version, &selection)?);
     Ok(())
 }
