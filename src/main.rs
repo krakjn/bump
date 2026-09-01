@@ -1,5 +1,5 @@
-use crate::cmd::BumpError;
 use crate::bumpfile::BumpFile;
+use crate::cmd::BumpError;
 use std::process::ExitCode;
 
 mod bumpfile;

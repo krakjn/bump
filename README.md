@@ -71,7 +71,7 @@ Subcommands for base keys (`major`, `year`, `alpha`, …) are generated from you
 
 ### Print
 
-Prints the composed version **without a trailing newline**. Aliases: `p`, `show`, `s`.
+Prints the composed version **without a trailing newline**. Aliases: `p`
 
 Default output is `[prefix][base][phase]`. Compose with flags:
 
@@ -99,9 +99,8 @@ bump major     # 1.0.0 -> 2.0.0
 bump minor     # 1.0.0 -> 1.1.0
 bump patch     # 1.0.0 -> 1.0.1
 
-# CalVer — bump a date key to refresh UTC calendar values
-bump day       # e.g. 2026.02.25
-bump year
+# CalVer — date keys collapse to `bump date` (not year/month/day subcommands)
+bump date      # sync year/month/day to UTC; already today → increment phase
 
 # Custom keys cascade by TOML order
 bump alpha     # increments alpha, zeroes keys listed after it
@@ -116,7 +115,9 @@ bump phase         # increment distance, e.g. 1.1.0-alpha.2
 bump phase beta    # switch phase, e.g. 1.1.0-beta.1
 ```
 
-Formal base bumps clear phase.
+Formal base bumps (`major`, `patch`, `alpha`, …) always clear phase.
+
+`bump date` is the exception: if date keys are already today's UTC values, it increments phase instead. Other base commands still refresh date keys as a side effect, but they clear phase rather than incrementing it.
 
 ### Metadata
 
@@ -215,13 +216,13 @@ export APP_VERSION="$(bump print --semver --only base)"
 
 ```cmake
 execute_process(
-  COMMAND bump print --only base
+  COMMAND bump print --semver
   WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/
   OUTPUT_VARIABLE VERSION)
 project("your-app" VERSION ${VERSION} LANGUAGES CXX C)
 ```
 
-CMake expects numeric `MAJOR.MINOR.PATCH`; use `--only base` or `--semver --only base` depending on your bumpfile keys.
+CMake expects numeric `MAJOR.MINOR.PATCH`; use `--semver` or `--semver --without phase` depending on your state.
 
 ### Makefile
 

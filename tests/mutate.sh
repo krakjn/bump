@@ -54,8 +54,11 @@ assert_eq "mutate/patch/clears-phase" "${PREFIX}0.1.1" p
 section "Calendar keys sync to UTC"
 
 setup_calver
-bump year >/dev/null
-assert_eq "mutate/calver/year-syncs-today" "$(today_calver_base)" p
+bump date >/dev/null
+assert_eq "mutate/calver/date-syncs-today" "$(today_calver_base)" p
+
+bump date >/dev/null
+assert_eq "mutate/calver/same-day-phase" "$(today_calver_base)-1" p
 
 section "Custom key cascade"
 

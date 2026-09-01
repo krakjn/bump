@@ -1,7 +1,10 @@
 use super::{Fields, base_int_lines, join_blocks, substitute};
 
 pub(crate) fn render(fields: &Fields) -> String {
-    let prefix = substitute("#define {emit_prefix}{case_prefix} \"{version_prefix}\"", fields);
+    let prefix = substitute(
+        "#define {emit_prefix}{case_prefix} \"{version_prefix}\"",
+        fields,
+    );
     let base = base_int_lines(fields, |prefix, c| {
         format!("#define {prefix}{} {}", c.case_name, c.value)
     });

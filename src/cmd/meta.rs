@@ -23,6 +23,9 @@ pub fn meta(matches: &ArgMatches) -> Result<(), BumpError> {
     }
 
     bumpfile.save(&version)?;
-    println!("{}", bumpfile::report("updated", bumpfile.path(), &version)?);
+    println!(
+        "{}",
+        bumpfile::report("updated", bumpfile.path(), &version)?
+    );
     Ok(())
 }

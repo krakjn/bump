@@ -16,7 +16,10 @@ const (
 const FOOTER: &str = "\n)\n";
 
 pub(crate) fn render(fields: &Fields) -> String {
-    let prefix = substitute("\t{emit_prefix}{case_prefix} = \"{version_prefix}\"", fields);
+    let prefix = substitute(
+        "\t{emit_prefix}{case_prefix} = \"{version_prefix}\"",
+        fields,
+    );
     let base = base_int_lines(fields, |prefix, c| {
         format!("\t{prefix}{} = {}", c.case_name, c.value)
     });

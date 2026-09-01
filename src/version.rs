@@ -144,35 +144,70 @@ impl Version {
         Ok(())
     }
 
-    pub fn bump(&mut self, component_name: &str) -> Result<(), BumpError> {
-        let before = self.base.components.clone();
+    fn is_date_key(name: &str) -> bool {
+        matches!(name, "year" | "month" | "day")
+    }
+
+    fn has_date_keys(&self) -> bool {
+        self.base
+            .components
+            .iter()
+            .any(|(name, _)| Self::is_date_key(name))
+    }
+
+    fn update_date(&mut self) -> bool {
         let now = chrono::Utc::now();
+        let mut changed = false;
+        for (name, value) in &mut self.base.components {
+            let next = match name.as_str() {
+                "year" => now.year() as u16,
+                "month" => now.month() as u16,
+                "day" => now.day() as u16,
+                _ => continue,
+            };
+            if *value != next {
+                *value = next;
+                changed = true;
+            }
+        }
+        changed
+    }
+
+    /// Sync date keys to UTC. Same-day (no date change) increments phase and
+    /// returns `true`; a date change clears phase and returns `false`.
+    pub fn date_bump(&mut self) -> Result<bool, BumpError> {
+        if !self.has_date_keys() {
+            return Err(BumpError::LogicError(
+                "No date keys (year, month, day) found in [base]".to_string(),
+            ));
+        }
+        if self.update_date() {
+            self.clear_phase();
+            self.update_timestamp();
+            Ok(false)
+        } else {
+            self.phase_bump(None)?;
+            Ok(true)
+        }
+    }
+
+    pub fn bump(&mut self, component_name: &str) -> Result<(), BumpError> {
+        self.update_date();
         let mut after_target = false;
         for (name, value) in self.base.components.iter_mut() {
-            if *name == "year" {
-                *value = now.year() as u16;
-                continue;
-            } else if *name == "month" {
-                *value = now.month() as u16;
-                continue;
-            } else if *name == "day" {
-                *value = now.day() as u16;
+            if Self::is_date_key(name) {
                 continue;
             }
-
             if *name == component_name {
                 *value += 1;
                 after_target = true;
                 continue;
             }
-
             if after_target {
                 *value = 0;
             }
         }
-        if self.base.components != before {
-            self.clear_phase();
-        }
+        self.clear_phase();
         self.update_timestamp();
         Ok(())
     }
@@ -311,6 +346,61 @@ mod tests {
     }
 
     #[test]
+    fn date_bump_syncs_stale_calendar_keys() {
+        let mut v = with_components(vec![("year", 2020), ("month", 1), ("day", 1)]);
+        v.phase.name = "rc".to_string();
+        v.phase.distance = 3;
+        let same_day = v.date_bump().unwrap();
+        assert!(!same_day);
+        let now = chrono::Utc::now();
+        assert_eq!(get(&v, "year"), now.year() as u16);
+        assert_eq!(get(&v, "month"), now.month() as u16);
+        assert_eq!(get(&v, "day"), now.day() as u16);
+        assert_eq!(v.phase.name, "");
+        assert_eq!(v.phase.distance, 0);
+    }
+
+    #[test]
+    fn date_bump_same_day_increments_phase_distance() {
+        let now = chrono::Utc::now();
+        let mut v = with_components(vec![
+            ("year", now.year() as u16),
+            ("month", now.month() as u16),
+            ("day", now.day() as u16),
+        ]);
+        let same_day = v.date_bump().unwrap();
+        assert!(same_day);
+        assert_eq!(v.phase.distance, 1);
+    }
+
+    #[test]
+    fn date_bump_year_month_only_same_day_increments_phase() {
+        let now = chrono::Utc::now();
+        let mut v = with_components(vec![
+            ("year", now.year() as u16),
+            ("month", now.month() as u16),
+        ]);
+        assert!(v.date_bump().unwrap());
+        assert_eq!(v.phase.distance, 1);
+    }
+
+    #[test]
+    fn bump_alpha_with_day_already_today_clears_phase() {
+        let now = chrono::Utc::now();
+        let mut v = with_components(vec![
+            ("year", now.year() as u16),
+            ("day", now.day() as u16),
+            ("alpha", 2),
+        ]);
+        v.phase.name = "rc".to_string();
+        v.phase.distance = 4;
+        v.bump("alpha").unwrap();
+        assert_eq!(get(&v, "alpha"), 3);
+        assert_eq!(v.phase.name, "");
+        assert_eq!(v.phase.distance, 0);
+    }
+
+    #[test]
     fn bump_unknown_name_is_noop_on_custom_keys() {
         let mut v = Version::test_fixture();
         v.bump("nope").unwrap();
@@ -336,13 +426,13 @@ mod tests {
     }
 
     #[test]
-    fn bump_unknown_name_does_not_clear_phase_without_base_change() {
+    fn bump_unknown_name_still_clears_phase() {
         let mut v = Version::test_fixture();
         v.phase.name = "alpha".to_string();
         v.phase.distance = 2;
         v.bump("nope").unwrap();
-        assert_eq!(v.phase.name, "alpha");
-        assert_eq!(v.phase.distance, 2);
+        assert_eq!(v.phase.name, "");
+        assert_eq!(v.phase.distance, 0);
     }
 
     #[test]

@@ -347,7 +347,11 @@ mod tests {
 
     #[test]
     fn default_compose() {
-        print_eq(&Version::test_fixture(), PrintSelection::default(), "v-0.1.0");
+        print_eq(
+            &Version::test_fixture(),
+            PrintSelection::default(),
+            "v-0.1.0",
+        );
     }
 
     #[test]

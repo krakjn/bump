@@ -33,7 +33,14 @@ fn mutate(
 }
 
 pub fn base(matches: &ArgMatches, component_name: &str) -> Result<(), BumpError> {
-    mutate(matches, |version| version.bump(component_name))
+    mutate(matches, |version| {
+        if component_name == "date" {
+            version.date_bump()?;
+            Ok(())
+        } else {
+            version.bump(component_name)
+        }
+    })
 }
 
 pub fn phase(matches: &ArgMatches) -> Result<(), BumpError> {

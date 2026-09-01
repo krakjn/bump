@@ -90,15 +90,19 @@ month = 2
 day = 25
 ```
 
-Bump a date key to sync UTC calendar values. Date keys refresh on every base bump, not only when you target them directly.
+Bump a date key via `bump date` (year/month/day are not individual commands). Date keys also refresh on every other base bump as a side effect — that is **not** a date bump, so phase is cleared rather than incremented.
 
 ```bash
-bump day      # typical daily release trigger
-bump year     # refresh all date keys from UTC
+bump date     # sync year/month/day to current UTC
 
-# Same-day repeat bumps can use phase for an intraday counter
-bump phase    # e.g. 2026.02.25 -> 2026.02.25-2
+# Same UTC day: increment phase (intraday counter)
+bump date     # e.g. 2026.02.25 -> 2026.02.25-1
+
+# Explicit phase command is still available
+bump phase    # e.g. 2026.02.25-2
 ```
+
+Mixed bumpfiles: `bump alpha` updates date keys to UTC and **clears** phase. Only a second `bump date` same-day increments phase.
 
 ## Custom and Mixed Base Keys
 
@@ -114,7 +118,7 @@ beta = 3
 ```
 
 ```bash
-bump alpha    # increments alpha, zeroes month and beta; year/month/day sync to UTC
+bump alpha    # increments alpha, zeroes later custom keys; date keys sync to UTC (phase cleared)
 bump print    # e.g. v2026.2.02.0
 bump print --semver   # first three keys: v2026.2.02
 ```

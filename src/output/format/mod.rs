@@ -84,7 +84,10 @@ pub fn substitute(tmpl: &str, fields: &Fields) -> String {
         .replace("{version_timestamp}", &fields.version_timestamp)
 }
 
-pub(crate) fn base_int_lines(fields: &Fields, line: impl Fn(&str, &BaseComponentField) -> String) -> String {
+pub(crate) fn base_int_lines(
+    fields: &Fields,
+    line: impl Fn(&str, &BaseComponentField) -> String,
+) -> String {
     let mut out = String::new();
     for (i, component) in fields.base_components.iter().enumerate() {
         if i > 0 {
@@ -198,7 +201,10 @@ mod tests {
             version_phase: String::new(),
             version_phase_distance: 0,
         };
-        let out = substitute("#define {emit_prefix}{case_string} \"{version_string}\"", &fields);
+        let out = substitute(
+            "#define {emit_prefix}{case_string} \"{version_string}\"",
+            &fields,
+        );
         assert_eq!(out, "#define APP_VERSION_STRING \"v-1.0.0\"");
     }
 
@@ -227,10 +233,7 @@ mod tests {
     #[test]
     fn populate_mixed_year_then_alpha_order() {
         let mut version = Version::test_fixture();
-        version.base.components = vec![
-            ("year".to_string(), 2026),
-            ("alpha".to_string(), 1),
-        ];
+        version.base.components = vec![("year".to_string(), 2026), ("alpha".to_string(), 1)];
         let fields = Fields::populate("", Case::Uppercase, &version).unwrap();
         assert_eq!(fields.base_components[0].case_name, "VERSION_YEAR");
         assert_eq!(fields.base_components[1].case_name, "VERSION_ALPHA");

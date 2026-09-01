@@ -1,6 +1,6 @@
 use crate::output::{Case, Format};
-use crate::version::SuffixMode;
 use crate::print::PrintValue;
+use crate::version::SuffixMode;
 use clap::builder::StyledStr;
 use clap::builder::styling::{AnsiColor, Styles};
 use clap::{Arg, Command, value_parser};
@@ -52,9 +52,30 @@ fn base_cmd(name: impl Into<String>, about: impl Into<String>) -> Command {
 }
 
 pub fn build_base_cmds(base_components: Vec<(String, u16)>) -> Vec<Command> {
-    base_components.into_iter().map(|(name, _value)| {
-        base_cmd(name.clone(), format!("Increment '{}' version", name))
-    }).collect()
+    let has_date_keys = base_components
+        .iter()
+        .any(|(name, _)| matches!(name.as_str(), "year" | "month" | "day"));
+
+    let mut cmds = Vec::new();
+    let mut date_cmd_added = false;
+
+    for (name, _value) in base_components {
+        if matches!(name.as_str(), "year" | "month" | "day") {
+            if has_date_keys && !date_cmd_added {
+                date_cmd_added = true;
+                cmds.push(base_cmd(
+                    "date",
+                    "Detected [year,month,day], update to current date (if same-day: phase + 1)",
+                ));
+            }
+            continue;
+        }
+        cmds.push(base_cmd(
+            name.clone(),
+            format!("Increment '{}' version", name),
+        ));
+    }
+    cmds
 }
 
 fn print_args() -> Vec<Arg> {
@@ -73,16 +94,18 @@ fn print_args() -> Vec<Arg> {
             .long("with")
             .value_name("OPTION")
             .value_parser(value_parser!(PrintValue))
+            .value_delimiter(',')
             .action(clap::ArgAction::Append)
             .display_order(3)
-            .help("Print [OPTION [, OPTION2, ..]]"),
+            .help("Print [OPTION[,OPTION..]]"),
         Arg::new("without")
             .long("without")
             .value_name("OPTION")
             .value_parser(value_parser!(PrintValue))
+            .value_delimiter(',')
             .action(clap::ArgAction::Append)
             .display_order(4)
-            .help("Print [OPTION [, OPTION2, ..]]"),
+            .help("Print [OPTION[,OPTION..]]"),
         Arg::new("only")
             .long("only")
             .value_name("OPTION")
@@ -104,11 +127,12 @@ fn print_args() -> Vec<Arg> {
 #[allow(clippy::too_many_lines)]
 pub fn cli(base_components: Vec<(String, u16)>) -> Command {
     let print_flags = print_args();
-    
+
     let base_cmds = if base_components.is_empty() {
-        vec![
-            base_cmd("_base_", "Increment '_base_' component, NOTE: can't find [base] keys"),
-        ]
+        vec![base_cmd(
+            "_base_",
+            "Increment '_base_' component, NOTE: can't find [base] keys",
+        )]
     } else {
         build_base_cmds(base_components)
     };

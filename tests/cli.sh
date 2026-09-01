@@ -37,10 +37,10 @@ setup_semver
 assert_contains "cli/help/patch" "patch" --help
 
 setup_calver
-assert_contains "cli/help/year" "year" --help
+assert_contains "cli/help/date" "date" --help
 
 setup_mixed
 assert_contains "cli/help/mixed-alpha" "alpha" --help
-assert_contains "cli/help/mixed-year" "year" --help
+assert_contains "cli/help/mixed-date" "date" --help
 
 echo "All cli tests passed."

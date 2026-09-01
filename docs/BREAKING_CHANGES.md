@@ -35,9 +35,11 @@ v9 generates one subcommand per `[base]` key in TOML order. Run `bump --help` in
 
 | v8 | v9 |
 |----|----|
-| `bump calendar` | `bump day` (or whichever date keys you define) |
+| `bump calendar` | `bump date` (shown when `[base]` has `year`, `month`, or `day`) |
 | `bump major` / `minor` / `patch` | same, when those keys exist in `[base]` |
 | _(none)_ | `bump alpha`, `bump beta`, … for custom keys |
+
+v8 `calendar` incremented phase on a same-day repeat. v9 does that **only** for `bump date`. `bump patch` / `bump alpha` always clear phase, even if they refresh date keys as a side effect.
 
 ### Bumpfile schema: no `[base].mode`
 
@@ -67,14 +69,14 @@ v8 also allowed optional `minor` / `patch` keys. v9 treats every non-reserved `[
 
 ### Base bumps clear phase
 
-Any base bump that changes a component value clears `[phase]` (name and distance reset to empty / zero). This matches v8 behavior for `major` / `minor` / `patch` / `calendar` and now applies to custom and date keys as well.
+Any non-`date` base bump clears `[phase]` (name and distance reset). `bump date` on a new calendar day also clears phase. `bump date` when date keys are already today's UTC increments phase instead.
 
 ### Removed commands
 
 | v8 | v9 |
 |----|----|
 | `bump completion SHELL` | removed |
-| `bump calendar` | removed — bump a date key instead |
+| `bump calendar` | `bump date` |
 
 ### No-subcommand behavior
 
@@ -88,7 +90,7 @@ v8 printed help when invoked without a subcommand. v9 prints an error and sugges
 |----|----|
 | `bump --major` / `--minor` / `--patch` | `bump major` / `minor` / `patch` |
 | `bump --phase` / `bump --phase NAME` | `bump phase` / `bump phase NAME` |
-| `bump --calendar` | `bump day` (or `year` / `month` — date keys from your bumpfile) |
+| `bump --calendar` | `bump date` |
 | `bump --prefix X` / `bump --suffix MODE` | `bump meta --prefix X` / `bump meta --suffix MODE` |
 | `bump PATH --patch` | `bump patch PATH` |
 | `bump gen -l LANG -o FILE` | `bump emit LANG -o FILE` |

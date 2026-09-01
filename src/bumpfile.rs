@@ -68,15 +68,12 @@ fn str_field(table: &Table, key: &str, section: &str, path: &Path) -> Result<Str
 }
 
 fn u32_field(table: &Table, key: &str, section: &str, path: &Path) -> Result<u32, BumpError> {
-    let n = table
-        .get(key)
-        .and_then(Item::as_integer)
-        .ok_or_else(|| {
-            bumpfile_parse_error(
-                path,
-                format!("Expected integer key '{key}' not found in [{section}]"),
-            )
-        })?;
+    let n = table.get(key).and_then(Item::as_integer).ok_or_else(|| {
+        bumpfile_parse_error(
+            path,
+            format!("Expected integer key '{key}' not found in [{section}]"),
+        )
+    })?;
     u32::try_from(n).map_err(|_| {
         bumpfile_parse_error(
             path,
@@ -101,10 +98,7 @@ fn parse_base_components(
         if !(0..=i64::from(u16::MAX)).contains(&n) {
             return Err(bumpfile_parse_error(
                 path,
-                format!(
-                    "Expected [base].{key} in range 0..={}",
-                    u16::MAX
-                ),
+                format!("Expected [base].{key} in range 0..={}", u16::MAX),
             ));
         }
         components.push((key.to_string(), n as u16));
@@ -116,9 +110,7 @@ fn version_from_doc(doc: &DocumentMut, path: &Path) -> Result<Version, BumpError
     let prefix = doc
         .get("prefix")
         .and_then(Item::as_str)
-        .ok_or_else(|| {
-            bumpfile_parse_error(path, "Expected key 'prefix' not found in [(root)]")
-        })?
+        .ok_or_else(|| bumpfile_parse_error(path, "Expected key 'prefix' not found in [(root)]"))?
         .to_string();
 
     let base_table = table(doc, "base", path)?;
@@ -291,7 +283,8 @@ impl BumpFile {
         let current_timestamp = chrono::Utc::now()
             .format("%Y-%m-%d %H:%M:%S %Z")
             .to_string();
-        let content = include_str!("templates/bump.toml").replace("{timestamp}", &current_timestamp);
+        let content =
+            include_str!("templates/bump.toml").replace("{timestamp}", &current_timestamp);
 
         fs::write(path, &content).map_err(BumpError::IoError)?;
         Self::parse(path)
