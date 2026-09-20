@@ -1,14 +1,15 @@
-```
- ____  __  __  __  __  ____ 
-(  _ \(  )(  )(  \/  )(  _ \
- ) _ < )(__)(  )    (  )___/
-(____/(______)(_/\/\_)(__)  
-```
+![logo](assets/bump_final.svg)
 # Automatic Versioning
+
+Move up with bump!  
+The sweet spot is when **b**anal **u**pdates **m**ove **p**rogramatically. Stop messing around with versioning and automate it away!
+
+
+## Why?
 
 I got tired of bespoke scripts and tons of regex parsing that differentiated slightly from repo to repo just to bump versions. So I created `bump` to be _dead simple_ and **without opinion**. Everyone wants to version differently and that's okay. With a sprinkling of convention and a large helping of automation this tool allows you to never have to worry about versions again!
 
-## What does `bump` solve?
+## Features:
 
 - **Declarative**: Human readable and modifiable `bump.toml`
 - **Composable**: Construct _your own_ version — e.g. `PRODUCT.RELEASE.HOTFIX`, or mix calendar and custom keys
@@ -16,8 +17,6 @@ I got tired of bespoke scripts and tons of regex parsing that differentiated sli
 - **Integrated**: `bump print` and `bump emit` feed the version into source, build scripts, and other tools
 - **Compatible**: `bump print --semver` outputs the first three base components for SemVer-aware tools
 - **Automatic**: Designed with continuous integration in mind
-
-> With `bump` you can stop thinking about versioning!
 
 ## Installation
 
