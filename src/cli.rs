@@ -257,6 +257,12 @@ pub fn cli(base_components: Vec<(String, u16)>) -> Command {
             Command::new("update")
                 .about("Update version in known file types (e.g. Cargo.toml)")
                 .arg(
+                    Arg::new("no-warn")
+                        .long("no-warn")
+                        .action(clap::ArgAction::SetTrue)
+                        .help("Suppress the pyproject warning if not proper semver"),
+                )
+                .arg(
                     Arg::new("path")
                         .value_name("PATH")
                         .num_args(1)

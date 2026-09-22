@@ -17,17 +17,17 @@ const FOOTER: &str = "\n)\n";
 
 pub(crate) fn render(fields: &Fields) -> String {
     let prefix = substitute(
-        "\t{emit_prefix}{case_prefix} = \"{version_prefix}\"",
+        "    {emit_prefix}{case_prefix} = \"{version_prefix}\"",
         fields,
     );
     let base = base_int_lines(fields, |prefix, c| {
-        format!("\t{prefix}{} = {}", c.case_name, c.value)
+        format!("    {prefix}{} = {}", c.case_name, c.value)
     });
     let tail = substitute(
-        r#"\t{emit_prefix}{case_phase} = "{version_phase}"
-\t{emit_prefix}{case_phase_distance} = {version_phase_distance}
-\t{emit_prefix}{case_string} = "{version_string}"
-\t{emit_prefix}{case_timestamp} = "{version_timestamp}""#,
+        r#"    {emit_prefix}{case_phase} = "{version_phase}"
+    {emit_prefix}{case_phase_distance} = {version_phase_distance}
+    {emit_prefix}{case_string} = "{version_string}"
+    {emit_prefix}{case_timestamp} = "{version_timestamp}""#,
         fields,
     );
     let body = join_blocks(&[&prefix, &base, &tail]);

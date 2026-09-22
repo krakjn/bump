@@ -44,6 +44,89 @@ assert_contains \
     "#define VERSION_MAJOR 0" \
     emit c
 
+section "Format and spacing"
+
+expected_raw() {
+    cat <<EOF
+VERSION_PREFIX="${PREFIX}"
+VERSION_MAJOR=0
+VERSION_MINOR=1
+VERSION_PATCH=0
+VERSION_PHASE=""
+VERSION_PHASE_DISTANCE=0
+VERSION_STRING="${PREFIX}0.1.0"
+VERSION_TIMESTAMP="${TIMESTAMP}"
+EOF
+}
+
+assert_eq "emit/raw/format-spacing" "$(expected_raw)" emit raw
+
+echo "[emit/go/format-spacing]"
+go_out="$(bump emit go)"
+if [[ "$go_out" == *$'\t'* ]]; then
+    echo "go emit must indent with spaces, not tabs"
+    printf '%s\n' "$go_out"
+    exit 1
+fi
+expected_go_body=$(
+    cat <<EOF
+const (
+    VERSION_PREFIX = "${PREFIX}"
+    VERSION_MAJOR = 0
+    VERSION_MINOR = 1
+    VERSION_PATCH = 0
+    VERSION_PHASE = ""
+    VERSION_PHASE_DISTANCE = 0
+    VERSION_STRING = "${PREFIX}0.1.0"
+    VERSION_TIMESTAMP = "${TIMESTAMP}"
+)
+EOF
+)
+if [[ "$go_out" != *"$expected_go_body"* ]]; then
+    echo "go const block spacing mismatch"
+    echo "expected body:"
+    printf '%s\n' "$expected_go_body"
+    echo "actual:"
+    printf '%s\n' "$go_out"
+    exit 1
+fi
+if [[ "$go_out" != *"package version"$'\n\n'"const ("* ]]; then
+    echo "expected blank line between package and const"
+    printf '%s\n' "$go_out"
+    exit 1
+fi
+echo "ok"
+echo
+
+echo "[emit/json/format-spacing]"
+json_out="$(bump emit json)"
+expected_json_spacing=$(
+    cat <<EOF
+{
+  "version": {
+    "prefix": "${PREFIX}",
+    "major": "0",
+    "minor": "1",
+    "patch": "0",
+    "phase": "",
+    "phase_distance": "0",
+    "string": "${PREFIX}0.1.0",
+    "timestamp": "${TIMESTAMP}"
+  }
+}
+EOF
+)
+if [[ "$json_out" != "$expected_json_spacing" ]]; then
+    echo "json spacing mismatch"
+    echo "expected:"
+    printf '%s\n' "$expected_json_spacing"
+    echo "actual:"
+    printf '%s\n' "$json_out"
+    exit 1
+fi
+echo "ok"
+echo
+
 section "Custom VERSION_ALPHA"
 
 setup_custom "$PREFIX"

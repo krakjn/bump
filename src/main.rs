@@ -21,10 +21,15 @@ fn bumpfile_path_from_args(args: &[String]) -> &str {
     if args.first().is_some_and(|cmd| cmd == "init") {
         return "bump.toml";
     }
-    // `update PATH [BUMPFILE]` — PATH is often Cargo.toml / pyproject.toml.
+    // `update [FLAGS...] PATH [BUMPFILE]` — PATH is often Cargo.toml / pyproject.toml.
     if args.first().is_some_and(|cmd| cmd == "update") {
-        if args.len() >= 3 {
-            if let Some(last) = args.last() {
+        let positionals: Vec<&String> = args
+            .iter()
+            .skip(1)
+            .filter(|a| !a.starts_with('-'))
+            .collect();
+        if positionals.len() >= 2 {
+            if let Some(last) = positionals.last() {
                 if last.ends_with(".toml") {
                     return last;
                 }

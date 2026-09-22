@@ -75,6 +75,31 @@ fi
 echo "ok"
 echo
 
+echo "[update/pyproject/no-warn]"
+cat > pyproject.toml <<'EOF'
+[project]
+name = "demo"
+version = "0.0.0"
+EOF
+out="$(bump update --no-warn pyproject.toml)"
+if [[ "$out" == *"Warning:"* || "$out" == *"Public version identifiers"* || "$out" == *"[N!]"* || "$out" == *"N!"* ]]; then
+    echo "expected pyproject warning suppressed with --no-warn"
+    echo "$out"
+    exit 1
+fi
+if [[ "$out" != *"pyproject.toml updated to version ${PREFIX}0.1.0"* ]]; then
+    echo "unexpected update message: $out"
+    exit 1
+fi
+ver="$(grep '^version = ' pyproject.toml | head -1)"
+if [[ "$ver" != "version = \"${PREFIX}0.1.0\"" ]]; then
+    echo "expected version with prefix after --no-warn, got: $ver"
+    cat pyproject.toml
+    exit 1
+fi
+echo "ok"
+echo
+
 echo "[update/pyproject/no-project]"
 cat > pyproject.toml <<'EOF'
 [tool.poetry]

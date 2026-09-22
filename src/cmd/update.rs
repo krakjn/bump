@@ -42,11 +42,12 @@ pub fn update(matches: &ArgMatches) -> Result<(), BumpError> {
             "path not provided",
         ))
     })?;
+    let no_warn = matches.get_flag("no-warn");
     let file_path = resolve_path(path_str);
     if file_path.ends_with("Cargo.toml") {
         cargo_toml(&version, &file_path)
     } else if file_path.ends_with("pyproject.toml") {
-        pyproject_toml(&version, &file_path)
+        pyproject_toml(&version, &file_path, no_warn)
     } else {
         Err(BumpError::LogicError(format!(
             "Unsupported file type: {path_str}"
@@ -66,24 +67,26 @@ fn cargo_toml(version: &Version, path: &Path) -> Result<(), BumpError> {
     Ok(())
 }
 
-fn pyproject_toml(version: &Version, path: &Path) -> Result<(), BumpError> {
+fn pyproject_toml(version: &Version, path: &Path, no_warn: bool) -> Result<(), BumpError> {
     let mut doc = load_toml(path)?;
 
     let yellow = "\x1b[33m";
     let cyan = "\x1b[36m";
     let purple = "\x1b[35m";
     let reset = "\x1b[0m";
-    println!(
-        "{yellow}Warning: pyproject.toml version string must comply with the following scheme:{reset}"
-    );
-    println!("{purple} [N!]N(.N)*[{{a|b|rc}}N][.postN][.devN]{reset}");
-    println!("{cyan}  N, N!, and N.N are numeric components.{reset}");
-    println!("{cyan}  {{a|b|rc}} is the alpha, beta, or release candidate suffix.{reset}");
-    println!("{cyan}  postN is the post-release version.{reset}");
-    println!("{cyan}  devN is the development version.{reset}");
-    println!(
-        "{yellow}  Public version identifiers MUST NOT include leading or trailing whitespace.{reset}"
-    );
+    if !no_warn {
+        println!(
+            "{yellow}Warning: pyproject.toml version string must comply with the following scheme:{reset}"
+        );
+        println!("{purple} [N!]N(.N)*[{{a|b|rc}}N][.postN][.devN]{reset}");
+        println!("{cyan}  N, N!, and N.N are numeric components.{reset}");
+        println!("{cyan}  {{a|b|rc}} is the alpha, beta, or release candidate suffix.{reset}");
+        println!("{cyan}  postN is the post-release version.{reset}");
+        println!("{cyan}  devN is the development version.{reset}");
+        println!(
+            "{yellow}  Public version identifiers MUST NOT include leading or trailing whitespace.{reset}"
+        );
+    }
 
     let v_str = print::to_string(version, &print::PrintSelection::default())?;
     let Some(project) = doc.get_mut("project") else {
