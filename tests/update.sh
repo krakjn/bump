@@ -165,6 +165,37 @@ fi
 echo "ok"
 echo
 
+section "update build.zig.zon"
+
+cat > build.zig.zon <<'EOF'
+.{
+    .name = .demo,
+    .version = "9.9.9",
+    .minimum_zig_version = "0.14.0",
+}
+EOF
+
+echo "[update/zig/replaces-any-version]"
+out="$(bump update build.zig.zon)"
+if [[ "$out" != *"build.zig.zon updated to version 0.1.0"* ]]; then
+    echo "unexpected zig update message: $out"
+    exit 1
+fi
+ver="$(grep '.version = ' build.zig.zon | head -1)"
+if [[ "$ver" != '    .version = "0.1.0",' ]]; then
+    echo "expected zig version without prefix, got: $ver"
+    cat build.zig.zon
+    exit 1
+fi
+min="$(grep '.minimum_zig_version = ' build.zig.zon)"
+if [[ "$min" != '    .minimum_zig_version = "0.14.0",' ]]; then
+    echo "minimum_zig_version should be unchanged, got: $min"
+    cat build.zig.zon
+    exit 1
+fi
+echo "ok"
+echo
+
 section "update unsupported paths"
 
 assert_fails \
