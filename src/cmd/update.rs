@@ -48,6 +48,8 @@ pub fn update(matches: &ArgMatches) -> Result<(), BumpError> {
         cargo_toml(&version, &file_path)
     } else if file_path.ends_with("pyproject.toml") {
         pyproject_toml(&version, &file_path, no_warn)
+    } else if file_path.ends_with("build.zig.zon") {
+        zig_zon(&version, &file_path)
     } else {
         Err(BumpError::LogicError(format!(
             "Unsupported file type: {path_str}"
@@ -103,4 +105,30 @@ fn pyproject_toml(version: &Version, path: &Path, no_warn: bool) -> Result<(), B
     save_toml(path, &doc)?;
     println!("pyproject.toml updated to version {v_str}");
     Ok(())
+}
+
+fn zig_zon(version: &Version, path: &Path) -> Result<(), BumpError> {
+    let zon = fs::read_to_string(path)?;
+    let selection = print::PrintSelection::default().without_prefix();
+    let v_str = print::to_string(version, &selection)?;
+    // `.version = ".*"` — first quoted value after `.version = `.
+    let updated = replace_quoted(zon, ".version = \"", &v_str).ok_or_else(|| {
+        BumpError::LogicError(format!(
+            "no .version = \"...\" field found in {}",
+            path.display()
+        ))
+    })?;
+    fs::write(path, updated)?;
+    println!("build.zig.zon updated to version {v_str}");
+    Ok(())
+}
+
+fn replace_quoted(src: String, marker: &str, value: &str) -> Option<String> {
+    let value_start = src.find(marker)? + marker.len();
+    let value_end = value_start + src.get(value_start..)?.find('"')?;
+    let mut out = String::with_capacity(src.len() - (value_end - value_start) + value.len());
+    out.push_str(&src[..value_start]);
+    out.push_str(value);
+    out.push_str(&src[value_end..]);
+    Some(out)
 }
