@@ -26,9 +26,12 @@ jobs:
           python-version: "3.12"
 
       - name: Install MkDocs
-        run: pip install mkdocs-material
+        run: pip install -r requirements-docs.txt
 
       - name: Build
+        env:
+          # Material prints a MkDocs 2.0 heads-up; we stay on 1.x via requirements-docs.txt
+          NO_MKDOCS_2_WARNING: "1"
         run: mkdocs build --strict
 
       - name: Upload Pages artifact
