@@ -1,0 +1,19 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: bump
+  title: bump
+  description: Automatic un-opinionated version bumping
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+    github.com/project-slug: krakjn/bump
+  tags:
+    - rust
+    - cli
+    - versioning
+    - semver
+    - calver
+spec:
+  type: tool
+  lifecycle: production
+  owner: user:default/tony

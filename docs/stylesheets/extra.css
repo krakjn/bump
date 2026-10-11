@@ -1,0 +1,142 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap");
+
+/* Hull / harbor / foam / brass */
+:root {
+  --bump-hull: #0b1c2c;
+  --bump-harbor: #0077a8;
+  --bump-harbor-light: #2a9bc7;
+  --bump-deep: #0d1f2d;
+  --bump-foam: #e8f4f8;
+  --bump-wake: #06b6d4;
+  --bump-brass: #c4a35a;
+  --bump-sail: #a8d8ea;
+  --bump-deck: #143044;
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-header__title,
+.md-nav__title {
+  font-family: "Fraunces", "Source Sans 3", Georgia, serif;
+  font-optical-sizing: auto;
+}
+
+/* Light: foam deck, navy ink */
+[data-md-color-scheme="nautical"] {
+  --md-primary-fg-color: var(--bump-harbor);
+  --md-primary-fg-color--light: var(--bump-harbor-light);
+  --md-primary-fg-color--dark: var(--bump-hull);
+  --md-primary-bg-color: #f7fcfd;
+  --md-accent-fg-color: var(--bump-brass);
+  --md-accent-fg-color--transparent: rgb(196 163 90 / 10%);
+  --md-default-fg-color: var(--bump-hull);
+  --md-default-fg-color--light: #1a3a4a;
+  --md-default-fg-color--lighter: #4a6a7a;
+  --md-default-bg-color: var(--bump-foam);
+  --md-code-bg-color: #d5e8ef;
+  --md-code-fg-color: var(--bump-hull);
+  --md-footer-bg-color: var(--bump-hull);
+  --md-footer-fg-color: var(--bump-sail);
+  --md-typeset-a-color: var(--bump-harbor);
+}
+
+/* Dark: deep sea, seafoam text */
+[data-md-color-scheme="nautical-slate"] {
+  --md-hue: 205;
+  --md-primary-fg-color: var(--bump-harbor);
+  --md-primary-fg-color--light: var(--bump-harbor-light);
+  --md-primary-fg-color--dark: var(--bump-hull);
+  --md-primary-bg-color: var(--bump-sail);
+  --md-accent-fg-color: var(--bump-brass);
+  --md-accent-fg-color--transparent: rgb(196 163 90 / 14%);
+  --md-default-fg-color: var(--bump-sail);
+  --md-default-fg-color--light: #c5e4ef;
+  --md-default-fg-color--lighter: #7aa8b8;
+  --md-default-bg-color: var(--bump-deep);
+  --md-code-bg-color: var(--bump-deck);
+  --md-code-fg-color: #d6eef5;
+  --md-footer-bg-color: #08141d;
+  --md-footer-fg-color: var(--bump-sail);
+  --md-typeset-a-color: var(--bump-wake);
+}
+
+.md-header {
+  background-color: var(--bump-hull);
+}
+
+.md-header::after {
+  content: "";
+  display: block;
+  height: 6px;
+  background:
+    radial-gradient(circle at 12px 0, transparent 10px, var(--bump-wake) 11px) 0 0 / 24px 6px,
+    linear-gradient(var(--bump-harbor), var(--bump-wake));
+  opacity: 0.85;
+}
+
+.md-tabs {
+  background-color: var(--bump-hull);
+}
+
+.hero-mark {
+  display: block;
+  max-width: min(420px, 80vw);
+  margin: 0.5rem auto 1.25rem;
+}
+
+[data-md-color-scheme="nautical-slate"] .hero-mark {
+  filter: brightness(1.05);
+}
+
+.tagline {
+  text-align: center;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.35rem;
+  margin-top: 0;
+}
+
+.download-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+  gap: 0.75rem;
+  margin: 1.25rem 0 1.75rem;
+}
+
+.download-grid > p {
+  display: contents;
+}
+
+.download-grid a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1rem;
+  border-radius: 2px;
+  background: var(--bump-harbor);
+  color: #f7fcfd !important;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 1px 0 rgb(11 28 44 / 25%);
+}
+
+.download-grid a:hover,
+.download-grid a:focus {
+  background: var(--bump-brass);
+  color: var(--bump-hull) !important;
+}
+
+.md-typeset .highlight,
+.md-typeset pre {
+  border-left: 3px solid var(--bump-harbor);
+}
+
+[data-md-color-scheme="nautical-slate"] .md-typeset .highlight,
+[data-md-color-scheme="nautical-slate"] .md-typeset pre {
+  border-left-color: var(--bump-wake);
+}
+
+.md-typeset .md-button {
+  border-radius: 2px;
+}

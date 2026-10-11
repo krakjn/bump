@@ -315,8 +315,10 @@ bump minor         # 1.0.0-rc.2 -> 1.1.0 (phase cleared)
 
 ## Documentation
 
-- **[Workflow Guide](docs/WORKFLOW.md)** — release pipelines, phases, labels, monorepo patterns, and CI examples
-- **[Breaking Changes](docs/BREAKING_CHANGES.md)** — migration notes between major versions
+- **[Site](https://krakjn.github.io/bump/)** — install, latest downloads, and docs
+- **[Usage](https://krakjn.github.io/bump/usage/)** — command reference
+- **[Workflow Guide](https://krakjn.github.io/bump/WORKFLOW/)** — release pipelines, phases, labels, monorepo patterns, and CI examples
+- **[Breaking Changes](https://krakjn.github.io/bump/BREAKING_CHANGES/)** — migration notes between major versions
 
 ## Development
 
