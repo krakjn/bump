@@ -19,18 +19,19 @@ theme:
     - content.code.copy
     - toc.follow
   palette:
-    - scheme: nautical
-      primary: custom
-      accent: custom
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to dark mode
-    - scheme: nautical-slate
+    # First palette is the default. Dark first so a new visit opens at night.
+    - scheme: slate
       primary: custom
       accent: custom
       toggle:
         icon: material/weather-night
         name: Switch to light mode
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
 
 extra_css:
   - stylesheets/extra.css

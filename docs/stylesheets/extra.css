@@ -1,16 +1,17 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap");
 
-/* Hull / harbor / foam / brass */
+/* Hull / harbor / foam / brass — solids chosen for WCAG AA on their surfaces */
 :root {
   --bump-hull: #0b1c2c;
-  --bump-harbor: #0077a8;
-  --bump-harbor-light: #2a9bc7;
-  --bump-deep: #0d1f2d;
-  --bump-foam: #e8f4f8;
-  --bump-wake: #06b6d4;
-  --bump-brass: #c4a35a;
-  --bump-sail: #a8d8ea;
-  --bump-deck: #143044;
+  --bump-ink: #07141c;
+  --bump-harbor: #0a6e9a;
+  --bump-deep: #0b1c2c;
+  --bump-foam: #e7f3f7;
+  --bump-sail: #e7f4f8;
+  --bump-link-dark: #7ad4ea;
+  --bump-link-light: #0a5678;
+  --bump-brass-dark: #e4c56a;
+  --bump-brass-light: #6e5010;
 }
 
 .md-typeset h1,
@@ -22,47 +23,10 @@
   font-optical-sizing: auto;
 }
 
-/* Light: foam deck, navy ink */
-[data-md-color-scheme="nautical"] {
-  --md-primary-fg-color: var(--bump-harbor);
-  --md-primary-fg-color--light: var(--bump-harbor-light);
-  --md-primary-fg-color--dark: var(--bump-hull);
-  --md-primary-bg-color: #f7fcfd;
-  --md-accent-fg-color: var(--bump-brass);
-  --md-accent-fg-color--transparent: rgb(196 163 90 / 10%);
-  --md-default-fg-color: var(--bump-hull);
-  --md-default-fg-color--light: #1a3a4a;
-  --md-default-fg-color--lighter: #4a6a7a;
-  --md-default-bg-color: var(--bump-foam);
-  --md-code-bg-color: #d5e8ef;
-  --md-code-fg-color: var(--bump-hull);
-  --md-footer-bg-color: var(--bump-hull);
-  --md-footer-fg-color: var(--bump-sail);
-  --md-typeset-a-color: var(--bump-harbor);
-}
-
-/* Dark: deep sea, seafoam text */
-[data-md-color-scheme="nautical-slate"] {
-  --md-hue: 205;
-  --md-primary-fg-color: var(--bump-harbor);
-  --md-primary-fg-color--light: var(--bump-harbor-light);
-  --md-primary-fg-color--dark: var(--bump-hull);
-  --md-primary-bg-color: var(--bump-sail);
-  --md-accent-fg-color: var(--bump-brass);
-  --md-accent-fg-color--transparent: rgb(196 163 90 / 14%);
-  --md-default-fg-color: var(--bump-sail);
-  --md-default-fg-color--light: #c5e4ef;
-  --md-default-fg-color--lighter: #7aa8b8;
-  --md-default-bg-color: var(--bump-deep);
-  --md-code-bg-color: var(--bump-deck);
-  --md-code-fg-color: #d6eef5;
-  --md-footer-bg-color: #08141d;
-  --md-footer-fg-color: var(--bump-sail);
-  --md-typeset-a-color: var(--bump-wake);
-}
-
+/* Header stays hull-navy in both schemes; title and icons stay foam. */
 .md-header {
   background-color: var(--bump-hull);
+  color: var(--bump-sail);
 }
 
 .md-header::after {
@@ -70,13 +34,115 @@
   display: block;
   height: 6px;
   background:
-    radial-gradient(circle at 12px 0, transparent 10px, var(--bump-wake) 11px) 0 0 / 24px 6px,
-    linear-gradient(var(--bump-harbor), var(--bump-wake));
-  opacity: 0.85;
+    radial-gradient(circle at 12px 0, transparent 10px, #7ad4ea 11px) 0 0 / 24px 6px,
+    linear-gradient(#0a6e9a, #7ad4ea);
 }
 
 .md-tabs {
   background-color: var(--bump-hull);
+}
+
+/* Dark — default. Inherit Material slate, then lift text off the hull. */
+[data-md-color-scheme="slate"] {
+  color-scheme: dark;
+  --md-hue: 205;
+  --md-primary-fg-color: #1490c0;
+  --md-primary-fg-color--light: #3aa8d4;
+  --md-primary-fg-color--dark: var(--bump-hull);
+  --md-primary-bg-color: var(--bump-sail);
+  --md-primary-bg-color--light: rgb(231 244 248 / 72%);
+  --md-accent-fg-color: var(--bump-brass-dark);
+  --md-accent-fg-color--transparent: rgb(228 197 106 / 16%);
+  --md-accent-bg-color: var(--bump-ink);
+  --md-default-fg-color: var(--bump-sail);
+  --md-default-fg-color--light: #c9e3ec;
+  --md-default-fg-color--lighter: #a9cad6;
+  --md-default-fg-color--lightest: rgb(231 244 248 / 14%);
+  --md-default-bg-color: var(--bump-deep);
+  --md-default-bg-color--light: #122838;
+  --md-default-bg-color--lighter: #183244;
+  --md-default-bg-color--lightest: rgb(231 244 248 / 8%);
+  --md-code-fg-color: #e8f6fa;
+  --md-code-bg-color: var(--bump-ink);
+  --md-code-bg-color--light: #102433;
+  --md-code-bg-color--lighter: #163044;
+  --md-code-hl-color: #e4c56a;
+  --md-code-hl-color--light: rgb(228 197 106 / 16%);
+  --md-code-hl-number-color: #ffb4a2;
+  --md-code-hl-special-color: #ffb4d0;
+  --md-code-hl-function-color: #e4c56a;
+  --md-code-hl-constant-color: #c9b6ff;
+  --md-code-hl-keyword-color: #8ed8ff;
+  --md-code-hl-string-color: #8ee0b0;
+  --md-code-hl-name-color: #e8f6fa;
+  --md-code-hl-operator-color: #c9e3ec;
+  --md-code-hl-punctuation-color: #c9e3ec;
+  --md-code-hl-comment-color: #9ec4d2;
+  --md-code-hl-generic-color: #c9e3ec;
+  --md-code-hl-variable-color: #c9e3ec;
+  --md-typeset-color: var(--bump-sail);
+  --md-typeset-a-color: var(--bump-link-dark);
+  --md-typeset-kbd-color: #163044;
+  --md-typeset-kbd-accent-color: #1e3c52;
+  --md-typeset-kbd-border-color: #3d6478;
+  --md-typeset-mark-color: rgb(228 197 106 / 35%);
+  --md-typeset-table-color: rgb(231 244 248 / 18%);
+  --md-typeset-table-color--light: rgb(231 244 248 / 8%);
+  --md-admonition-fg-color: var(--bump-sail);
+  --md-admonition-bg-color: #122838;
+  --md-footer-fg-color: var(--bump-sail);
+  --md-footer-fg-color--light: #c9e3ec;
+  --md-footer-fg-color--lighter: #a9cad6;
+  --md-footer-bg-color: var(--bump-ink);
+  --md-footer-bg-color--dark: #050d14;
+}
+
+/* Light — foam deck, ink text, darkened links */
+[data-md-color-scheme="default"] {
+  color-scheme: light;
+  --md-primary-fg-color: var(--bump-link-light);
+  --md-primary-fg-color--light: #14759a;
+  --md-primary-fg-color--dark: var(--bump-hull);
+  --md-primary-bg-color: var(--bump-sail);
+  --md-primary-bg-color--light: rgb(231 244 248 / 72%);
+  --md-accent-fg-color: var(--bump-brass-light);
+  --md-accent-fg-color--transparent: rgb(110 80 16 / 12%);
+  --md-default-fg-color: var(--bump-hull);
+  --md-default-fg-color--light: #1c3d4e;
+  --md-default-fg-color--lighter: #3d5c6c;
+  --md-default-fg-color--lightest: rgb(11 28 44 / 12%);
+  --md-default-bg-color: var(--bump-foam);
+  --md-default-bg-color--light: #f4fafc;
+  --md-default-bg-color--lighter: #d5e7ef;
+  --md-default-bg-color--lightest: rgb(11 28 44 / 6%);
+  --md-code-fg-color: var(--bump-hull);
+  --md-code-bg-color: #d3e6ee;
+  --md-code-bg-color--light: #e3f0f5;
+  --md-code-bg-color--lighter: #edf5f8;
+  --md-code-hl-color: #6e5010;
+  --md-code-hl-number-color: #9f2d2d;
+  --md-code-hl-special-color: #9a2f5a;
+  --md-code-hl-function-color: #6e5010;
+  --md-code-hl-constant-color: #4c3d8f;
+  --md-code-hl-keyword-color: #0a5678;
+  --md-code-hl-string-color: #0d6b3c;
+  --md-code-hl-name-color: var(--bump-hull);
+  --md-code-hl-operator-color: #1c3d4e;
+  --md-code-hl-punctuation-color: #1c3d4e;
+  --md-code-hl-comment-color: #3d5c6c;
+  --md-code-hl-generic-color: #1c3d4e;
+  --md-code-hl-variable-color: #1c3d4e;
+  --md-typeset-color: var(--bump-hull);
+  --md-typeset-a-color: var(--bump-link-light);
+  --md-typeset-table-color: rgb(11 28 44 / 16%);
+  --md-typeset-table-color--light: rgb(11 28 44 / 6%);
+  --md-admonition-fg-color: var(--bump-hull);
+  --md-admonition-bg-color: #f4fafc;
+  --md-footer-fg-color: var(--bump-sail);
+  --md-footer-fg-color--light: #c9e3ec;
+  --md-footer-fg-color--lighter: #a9cad6;
+  --md-footer-bg-color: var(--bump-hull);
+  --md-footer-bg-color--dark: var(--bump-ink);
 }
 
 .hero-mark {
@@ -85,15 +151,12 @@
   margin: 0.5rem auto 1.25rem;
 }
 
-[data-md-color-scheme="nautical-slate"] .hero-mark {
-  filter: brightness(1.05);
-}
-
 .tagline {
   text-align: center;
   font-family: "Fraunces", Georgia, serif;
   font-size: 1.35rem;
   margin-top: 0;
+  color: var(--md-default-fg-color);
 }
 
 .download-grid {
@@ -113,28 +176,28 @@
   justify-content: center;
   padding: 0.65rem 1rem;
   border-radius: 2px;
-  background: var(--bump-harbor);
-  color: #f7fcfd !important;
+  background: #0a6e9a;
+  color: #f4fbfd !important;
   font-weight: 600;
   text-align: center;
   text-decoration: none;
-  box-shadow: 0 1px 0 rgb(11 28 44 / 25%);
+  box-shadow: 0 1px 0 rgb(11 28 44 / 35%);
 }
 
 .download-grid a:hover,
 .download-grid a:focus {
-  background: var(--bump-brass);
-  color: var(--bump-hull) !important;
+  background: var(--bump-brass-dark);
+  color: var(--bump-ink) !important;
 }
 
 .md-typeset .highlight,
 .md-typeset pre {
-  border-left: 3px solid var(--bump-harbor);
+  border-left: 3px solid #1490c0;
 }
 
-[data-md-color-scheme="nautical-slate"] .md-typeset .highlight,
-[data-md-color-scheme="nautical-slate"] .md-typeset pre {
-  border-left-color: var(--bump-wake);
+[data-md-color-scheme="default"] .md-typeset .highlight,
+[data-md-color-scheme="default"] .md-typeset pre {
+  border-left-color: var(--bump-link-light);
 }
 
 .md-typeset .md-button {

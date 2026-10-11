@@ -2,7 +2,8 @@
 
 <p class="tagline">Move up with bump.</p>
 
-<img class="hero-mark" src="assets/bump_final.svg" alt="bump" />
+<img class="hero-mark" src="assets/bump_final-white.svg#only-dark" alt="bump" />
+<img class="hero-mark" src="assets/bump_final.svg#only-light" alt="" />
 
 The sweet spot is when **b**anal **u**pdates **m**ove **p**rogrammatically. Stop messing around with versioning and automate it away.
 
