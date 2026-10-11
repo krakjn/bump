@@ -1,0 +1,56 @@
+site_name: bump
+site_description: Automatic un-opinionated version bumping
+site_url: https://krakjn.github.io/bump/
+repo_url: https://github.com/krakjn/bump
+repo_name: krakjn/bump
+copyright: MIT License
+
+theme:
+  name: material
+  logo: assets/bump_final-white.svg
+  favicon: assets/bump_final-white.svg
+  font:
+    text: Source Sans 3
+    code: Source Code Pro
+  features:
+    - navigation.instant
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - toc.follow
+  palette:
+    - scheme: nautical
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - scheme: nautical-slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - attr_list
+  - md_in_html
+  - tables
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Usage: usage.md
+  - Workflow: WORKFLOW.md
+  - Breaking Changes: BREAKING_CHANGES.md
+
+strict: true
