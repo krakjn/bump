@@ -3,7 +3,7 @@
 Practical patterns for day-to-day use. For bumpfile fields and print flags, see
 [Usage](usage.md#bumpfile).
 
-Upgrading from v8? See [Breaking Changes](BREAKING_CHANGES.md#v8-v9).
+Upgrading from v8? See [Breaking Changes](breaking-changes.md#v8-v9).
 
 ## Single BUMPFILE Pipeline
 
@@ -306,4 +306,4 @@ COPY . .
 ## See Also
 
 - [Usage](usage.md) — bumpfile schema, command reference, and tips
-- [Breaking Changes](BREAKING_CHANGES.md) — migration notes between major versions
+- [Breaking Changes](breaking-changes.md) — migration notes between major versions

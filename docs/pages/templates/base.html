@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page.title }} · bump</title>
+    <meta name="description" content="bump: automatic, un-opinionated version bumping. One binary, every platform.">
+    <link rel="icon" type="image/svg+xml" href="{{ '/assets/bump_final.svg' | url }}">
+    <script>
+        // Dark unless the reader chose light; set before first paint so nothing flashes.
+        (function () {
+            var saved = localStorage.getItem("theme");
+            document.documentElement.dataset.theme = saved === "light" ? "light" : "dark";
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ '/css/brass-tacks.css' | url }}">
+    <link rel="stylesheet" href="{{ '/css/theme.css' | url }}">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/powershell.min.js"></script>
+    <script defer src="{{ '/js/site.js' | url }}"></script>
+</head>
+<body{% if page.url == '/' %} class="home"{% endif %}>
+    <div class="progress" aria-hidden="true"></div>
+    <div class="hull">
+        <header class="bar">
+            <a class="bar-home" href="{{ '/' | url }}">
+                <svg class="chevrons" viewBox="0 0 24 24" aria-hidden="true">
+                    <path class="chev chev-top" d="M5 10.5 12 4l7 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path class="chev chev-mid" d="M5 15.5 12 9l7 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path class="chev chev-low" d="M5 20.5 12 14l7 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="bar-copy">
+                    <span class="brand">bump</span>
+                    <span class="tag">Move up with bump.</span>
+                </span>
+            </a>
+            <a class="source" href="https://github.com/krakjn/bump" title="Go to repository">
+                <span class="source-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="4.6" y="4.6" width="14.8" height="14.8" rx="2.6" transform="rotate(45 12 12)" fill="currentColor"/>
+                        <g class="source-branch" fill="none" stroke-width="1.7" stroke-linecap="round">
+                            <path d="M9.6 7.4v9.2M9.6 9.2l4.6 4.4"/>
+                            <circle cx="9.6" cy="7.4" r="1.25"/>
+                            <circle cx="9.6" cy="16.6" r="1.25"/>
+                            <circle cx="14.6" cy="14" r="1.25"/>
+                        </g>
+                    </svg>
+                </span>
+                <span class="source-copy">
+                    <span class="source-name">krakjn/bump</span>
+                    <span class="source-facts">
+                        <span title="Latest release"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12.6V4.5a1 1 0 0 1 1-1h8.1l8 8a1.4 1.4 0 0 1 0 2l-7 7a1.4 1.4 0 0 1-2 0Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg><span data-release>latest</span></span>
+                        <span title="Stars"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.2 2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 17l-5.4 3 1.1-6.1-4.5-4.3 6.1-.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span data-stars>–</span></span>
+                        <span title="Forks"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6.5" cy="5" r="2"/><circle cx="17.5" cy="5" r="2"/><circle cx="12" cy="19" r="2"/><path d="M6.5 7v1.5a2.5 2.5 0 0 0 2.5 2.5h6a2.5 2.5 0 0 0 2.5-2.5V7M12 11v6"/></g></svg><span data-forks>–</span></span>
+                    </span>
+                </span>
+            </a>
+            <button class="theme-toggle" type="button" aria-label="Toggle dark mode">
+                <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </button>
+        </header>
+
+        {% if page.url == '/' %}
+        <section class="hero">
+            <div class="hero-copy">
+                <p class="eyebrow">Un-opinionated version bumping</p>
+                <p class="hero-mark">
+                    <img src="{{ '/assets/bump_hero.svg' | url }}" alt="bump" width="1220" height="602">
+                </p>
+                <p class="hero-lede">The sweet spot is when <b>b</b>anal <b>u</b>pdates <b>m</b>ove <b>p</b>rogrammatically. Declare your version in TOML, then let CI do the counting.</p>
+                <div class="hero-actions">
+                    <a class="btn btn-solid" data-download href="https://github.com/krakjn/bump/releases/latest">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span data-download-label>Download bump</span>
+                    </a>
+                    <a class="btn btn-ghost" href="{{ '/usage/' | url }}">Read the controls</a>
+                </div>
+                <p class="hero-alt">Other platforms? <a href="#download-latest">All six builds</a> · <a href="#install">one-line install</a></p>
+                <ul class="stats">
+                    <li><strong>1</strong><span>static binary</span></li>
+                    <li><strong>0</strong><span>runtime dependencies</span></li>
+                    <li><strong>6</strong><span>platform builds</span></li>
+                </ul>
+            </div>
+            <div class="dial" aria-label="Example terminal session">
+                <div class="dial-head">
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                    <span class="dial-file">~/ship-it · bump.toml</span>
+                </div>
+                <div class="dial-body">
+                    <pre class="term"><code data-term>$ bump print
+v1.4.2
+$ bump patch
+1.4.2 → 1.4.3
+$ bump minor
+1.4.3 → 1.5.0
+$ bump phase rc
+1.5.0 → 1.5.0-rc.1</code></pre>
+                </div>
+                <svg class="hero-chevrons" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 10.5 12 4l7 6.5M5 15.5 12 9l7 6.5M5 20.5 12 14l7 6.5" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </section>
+        {% endif %}
+
+        <div class="works">
+            <nav class="panel" aria-label="Pages">
+                <p class="panel-label">Pages</p>
+                {% set pages = [
+                    ('/', 'The Gauge'),
+                    ('/usage/', 'The Controls'),
+                    ('/workflow/', 'The Line'),
+                    ('/breaking-changes/', 'The Logbook')
+                ] %}
+                <ul class="gauges">
+                    {% for target, label in pages %}
+                    <li>
+                        <a href="{{ target | url }}"{% if target == page.url %} class="active" aria-current="page"{% endif %}>{{ label }}</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% if page.toc and page.toc.html.count('<li>') > 1 %}
+                <p class="panel-label">On this page</p>
+                <div class="toc">
+                    {{ page.toc.html }}
+                </div>
+                {% endif %}
+            </nav>
+
+            <main class="frame">
+                {{ page.html }}
+            </main>
+        </div>
+
+        <footer class="keel">
+            <span>Stop counting. Start shipping.</span>
+            <a href="https://github.com/krakjn/bump">GitHub</a>
+            <a href="https://github.com/krakjn/bump/releases">Releases</a>
+            <a href="https://github.com/krakjn/bump/blob/main/LICENSE">MIT</a>
+        </footer>
+    </div>
+</body>
+</html>

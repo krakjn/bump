@@ -21,24 +21,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install MkDocs
-        run: pip install -r requirements-docs.txt
+      - uses: astral-sh/setup-uv@v6
 
       - name: Build
-        env:
-          # Material prints a MkDocs 2.0 heads-up; we stay on 1.x via requirements-docs.txt
-          NO_MKDOCS_2_WARNING: "1"
-        run: mkdocs build --strict
+        run: sh docs/build.sh
 
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: docs/site
 
   deploy:
     needs: build

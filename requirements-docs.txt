@@ -1,5 +1,0 @@
-# MkDocs 2.0 is a rewrite (no plugins, new theming, no YAML migration).
-# Material 9.7.5+ already constrains mkdocs<2; pin both so CI cannot float to 2.x.
-# Long-term successor from the Material team: https://zensical.org
-mkdocs>=1.6,<2
-mkdocs-material>=9.7.5,<10

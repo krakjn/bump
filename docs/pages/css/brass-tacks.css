@@ -1,0 +1,168 @@
+/*
+ * Brass Tacks: warm paper, cast iron, brass fittings.
+ *
+ * Raw colors are --bt-<name>. Semantic tokens (--bt-bg, --bt-ink, ...) follow
+ * the light or dark scheme. Code blocks stay dark in both schemes, so the
+ * syntax colors do not change with the scheme.
+ *
+ * Dark applies with [data-theme="dark"] on any ancestor, or from the OS
+ * preference when no data-theme is set.
+ */
+
+:root {
+    /* Paper (light grounds) */
+    --bt-paper: #f4f1eb;
+    --bt-paper-bright: #fffcf8;
+    --bt-paper-shade: #f0ebe3;
+    --bt-cream: #f6f1e7;
+    --bt-cream-muted: #b7b0a4;
+
+    /* Iron (dark panels) */
+    --bt-iron: #161513;
+    --bt-iron-raised: #23211e;
+    --bt-iron-night: #1d1b19;
+    --bt-iron-night-raised: #2a2724;
+
+    /* Soot (dark grounds) */
+    --bt-soot: #0f0e0d;
+    --bt-soot-raised: #181715;
+    --bt-soot-shade: #24221f;
+    --bt-pitch: #0b0a09;
+
+    /* Ink */
+    --bt-ink: #1c1b19;
+    --bt-ink-muted: #6d675f;
+    --bt-bone: #ece6da;
+    --bt-ash: #a39b8e;
+
+    /* Brass */
+    --bt-brass: #c4a15a;
+    --bt-brass-bright: #e2c27d;
+    --bt-brass-deep: #8c6b2f;
+    --bt-brass-pale: #f3e2bc;
+    --bt-tarnish: #8a5a12;
+
+    /* Signals */
+    --bt-verdigris: #3f8f5b;
+    --bt-verdigris-bright: #6cc28a;
+    --bt-copper: #c0532d;
+    --bt-copper-bright: #ec8a63;
+
+    /* Syntax, on --bt-code-bg */
+    --bt-code-plain: #f3eee6;
+    --bt-code-keyword: #e2c27d;
+    --bt-code-type: #8fc6e8;
+    --bt-code-function: #f0d9a8;
+    --bt-code-string: #9fd3a8;
+    --bt-code-number: #ec9a76;
+    --bt-code-comment: #7c7468;
+    --bt-code-meta: #c79fd8;
+}
+
+:root,
+[data-theme="light"] {
+    --bt-bg: var(--bt-paper);
+    --bt-bg-glow: rgba(196, 161, 90, 0.18);
+    --bt-surface: var(--bt-paper-bright);
+    --bt-surface-2: var(--bt-paper-shade);
+    --bt-text: var(--bt-ink);
+    --bt-text-muted: var(--bt-ink-muted);
+    --bt-panel: var(--bt-iron);
+    --bt-panel-raised: var(--bt-iron-raised);
+    --bt-on-panel: var(--bt-cream);
+    --bt-on-panel-muted: var(--bt-cream-muted);
+    --bt-accent: var(--bt-brass);
+    --bt-accent-bright: var(--bt-brass-bright);
+    --bt-accent-deep: var(--bt-brass-deep);
+    --bt-link: var(--bt-tarnish);
+    --bt-ok: var(--bt-verdigris);
+    --bt-err: var(--bt-copper);
+    --bt-line: rgba(28, 27, 25, 0.1);
+    --bt-code-bg: var(--bt-iron);
+    --bt-shadow: 0 10px 30px rgba(22, 21, 19, 0.08);
+    color-scheme: light;
+}
+
+[data-theme="dark"] {
+    --bt-bg: var(--bt-soot);
+    --bt-bg-glow: rgba(196, 161, 90, 0.1);
+    --bt-surface: var(--bt-soot-raised);
+    --bt-surface-2: var(--bt-soot-shade);
+    --bt-text: var(--bt-bone);
+    --bt-text-muted: var(--bt-ash);
+    --bt-panel: var(--bt-iron-night);
+    --bt-panel-raised: var(--bt-iron-night-raised);
+    --bt-link: var(--bt-brass-bright);
+    --bt-ok: var(--bt-verdigris-bright);
+    --bt-err: var(--bt-copper-bright);
+    --bt-line: rgba(236, 230, 218, 0.1);
+    --bt-code-bg: var(--bt-pitch);
+    --bt-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+        --bt-bg: var(--bt-soot);
+        --bt-bg-glow: rgba(196, 161, 90, 0.1);
+        --bt-surface: var(--bt-soot-raised);
+        --bt-surface-2: var(--bt-soot-shade);
+        --bt-text: var(--bt-bone);
+        --bt-text-muted: var(--bt-ash);
+        --bt-panel: var(--bt-iron-night);
+        --bt-panel-raised: var(--bt-iron-night-raised);
+        --bt-link: var(--bt-brass-bright);
+        --bt-ok: var(--bt-verdigris-bright);
+        --bt-err: var(--bt-copper-bright);
+        --bt-line: rgba(236, 230, 218, 0.1);
+        --bt-code-bg: var(--bt-pitch);
+        --bt-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        color-scheme: dark;
+    }
+}
+
+/* highlight.js tokens */
+
+.hljs {
+    color: var(--bt-code-plain);
+}
+
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-built_in {
+    color: var(--bt-code-keyword);
+}
+
+.hljs-type,
+.hljs-title.class_ {
+    color: var(--bt-code-type);
+}
+
+.hljs-title.function_,
+.hljs-title {
+    color: var(--bt-code-function);
+}
+
+.hljs-string,
+.hljs-meta .hljs-string {
+    color: var(--bt-code-string);
+}
+
+.hljs-number,
+.hljs-literal {
+    color: var(--bt-code-number);
+}
+
+.hljs-comment {
+    color: var(--bt-code-comment);
+    font-style: italic;
+}
+
+.hljs-meta {
+    color: var(--bt-code-meta);
+}
+
+.hljs-params,
+.hljs-variable {
+    color: var(--bt-code-plain);
+}
