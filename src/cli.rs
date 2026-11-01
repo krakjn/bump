@@ -25,6 +25,17 @@ fn root_usage() -> StyledStr {
     usage
 }
 
+fn update_path_help() -> StyledStr {
+    let ctx = HELP_STYLES.get_context();
+    let ctx_val = HELP_STYLES.get_context_value();
+    let mut help = StyledStr::new();
+    let _ = write!(
+        help,
+        "Update version at PATH. {ctx}[Supported: {ctx:#}{ctx_val}Cargo.toml, pyproject.toml, build.zig.zon{ctx_val:#}{ctx}]{ctx:#}"
+    );
+    help
+}
+
 fn bumpfile_arg() -> Arg {
     Arg::new("bumpfile")
         .value_name("BUMPFILE")
@@ -267,7 +278,7 @@ pub fn cli(base_components: Vec<(String, u16)>) -> Command {
                         .value_name("PATH")
                         .num_args(1)
                         .required(true)
-                        .help("File type bump knows how to update"),
+                        .help(update_path_help()),
                 )
                 .arg(bumpfile_arg()),
         )
