@@ -1,0 +1,41 @@
+#  ____  __  __  __  __  ____ 
+# (  _ \(  )(  )(  \/  )(  _ \
+#  ) _ < )(__)(  )    (  )___/
+# (____/(______)(_/\/\_)(__)
+#
+# https://github.com/krakjn/bump
+
+prefix = "v"
+
+# NOTE: define your own keys! (bump respects TOML order = cascade order)
+#   - at least one key is needed
+#   - special keys: "year", "month", "day" are populated based on current calendar date
+[base]
+delimiter = "."
+major = 9
+minor = 2
+patch = 0
+
+[phase]
+separator = "-"
+name = ""
+delimiter = "."
+distance = 0
+
+# suffix type:
+#  - "git_sha"  : append 7 char sha1 of the current commit (default)
+#  - "branch"   : append the current git branch name
+[suffix]
+mode = "git_sha"
+separator = "+"
+
+[timestamp]
+format = "%Y-%m-%d %H:%M:%S %Z"
+last = "2026-11-01 14:27:51 UTC"
+
+# printed label: shown but never tracked, useful injecting dynamic values
+#  - position: "before-prefix", "after-prefix",
+#              "before-base", "after-base",
+#              "before-phase", "after-phase",
+[label]
+position = "after-base"
