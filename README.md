@@ -171,11 +171,12 @@ bump tag -m "Custom message" [BUMPFILE]
 
 ### Update package manifests
 
-Supports `Cargo.toml` and `pyproject.toml`:
+Update version at `PATH`. [Supported: `Cargo.toml`, `pyproject.toml`, `build.zig.zon`]
 
 ```bash
 bump update Cargo.toml [BUMPFILE]
 bump update pyproject.toml [BUMPFILE]
+bump update build.zig.zon [BUMPFILE]
 ```
 
 ## GitHub Actions
