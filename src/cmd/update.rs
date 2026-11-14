@@ -1,5 +1,5 @@
 use crate::{
-    cmd::{BumpError, load_bumpfile, resolve_path},
+    cmd::{BumpError, load_bumpfile, resolve_path, write_if_changed},
     print,
     version::Version,
 };
@@ -14,8 +14,8 @@ fn load_toml(path: &Path) -> Result<DocumentMut, BumpError> {
         .map_err(|e| BumpError::ParseError(format!("failed to parse {}: {e}", path.display())))
 }
 
-fn save_toml(path: &Path, doc: &DocumentMut) -> Result<(), BumpError> {
-    fs::write(path, doc.to_string()).map_err(BumpError::IoError)
+fn save_toml(path: &Path, doc: &DocumentMut) -> Result<bool, BumpError> {
+    write_if_changed(path, &doc.to_string())
 }
 
 fn set_toml_field(
@@ -64,8 +64,11 @@ fn cargo_toml(version: &Version, path: &Path) -> Result<(), BumpError> {
     println!("cargo doesn't like a character prefix in Cargo.toml, stripping prefix");
 
     set_toml_field(&mut doc, "package", "version", &v_str)?;
-    save_toml(path, &doc)?;
-    println!("Cargo.toml updated to version {v_str}");
+    if save_toml(path, &doc)? {
+        println!("Cargo.toml updated to version {v_str}");
+    } else {
+        println!("current version already written");
+    }
     Ok(())
 }
 
@@ -102,8 +105,11 @@ fn pyproject_toml(version: &Version, path: &Path, no_warn: bool) -> Result<(), B
         ));
     }
     set_toml_field(&mut doc, "project", "version", &v_str)?;
-    save_toml(path, &doc)?;
-    println!("pyproject.toml updated to version {v_str}");
+    if save_toml(path, &doc)? {
+        println!("pyproject.toml updated to version {v_str}");
+    } else {
+        println!("current version already written");
+    }
     Ok(())
 }
 
@@ -118,8 +124,11 @@ fn zig_zon(version: &Version, path: &Path) -> Result<(), BumpError> {
             path.display()
         ))
     })?;
-    fs::write(path, updated)?;
-    println!("build.zig.zon updated to version {v_str}");
+    if write_if_changed(path, &updated)? {
+        println!("build.zig.zon updated to version {v_str}");
+    } else {
+        println!("current version already written");
+    }
     Ok(())
 }
 

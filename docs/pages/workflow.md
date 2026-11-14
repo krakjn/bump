@@ -24,7 +24,7 @@ git push origin HEAD --tags
 
 ### 2. Emit version files during builds
 
-Generated files reflect the bumpfile at build time. Add them to `.gitignore` when you emit on every build so you never commit a stale version.
+Generated files reflect the bumpfile at build time. Add them to `.gitignore` when you emit on every build so you never commit a stale version. When the rendered file already matches disk, emit leaves it in place and prints `current version already written to <path>`. The modification time stays the same, so Make, Ninja, and Cargo skip dependents and the extra emit step stays fast.
 
 ```bash
 bump emit c -o include/version.h
@@ -291,6 +291,8 @@ version:
 emit:
 	bump emit c --prefix MYAPP_ -o include/version.h
 ```
+
+Run `emit` on every build. An up-to-date header is left in place, so Make keeps the old timestamp and skips recompiling objects that include it.
 
 ## Docker Build Args
 

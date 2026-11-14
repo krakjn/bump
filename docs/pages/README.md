@@ -8,6 +8,7 @@ Everyone versions differently, and that's okay. bump is dead simple and **withou
 - **Composable**: build *your* version, e.g. `PRODUCT.RELEASE.HOTFIX`, or mix calendar and custom keys
 - **Flexible**: several **BUMPFILE**s in one repo
 - **Integrated**: `bump print` and `bump emit` feed source, build scripts, and other tools
+- **Build-friendly**: `bump emit` and `bump update` leave a matching file in place, so its modification time stays put and timestamp-based builds stay fast
 - **Compatible**: `bump print --semver` for tools that want the first three base components
 - **Automatic**: built for continuous integration
 

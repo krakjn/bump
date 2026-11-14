@@ -72,6 +72,24 @@ pub fn ensure_directory_exists(path: &Path) -> Result<(), BumpError> {
     Ok(())
 }
 
+/// Writes `content` when it differs from the file at `path`.
+/// Returns `true` when the file was written. An identical file is left
+/// untouched so its mtime does not change.
+pub(crate) fn write_if_changed(path: &Path, content: &str) -> Result<bool, BumpError> {
+    match fs::read(path) {
+        Ok(existing) if existing == content.as_bytes() => Ok(false),
+        Ok(_) => {
+            fs::write(path, content).map_err(BumpError::IoError)?;
+            Ok(true)
+        }
+        Err(err) if err.kind() == io::ErrorKind::NotFound => {
+            fs::write(path, content).map_err(BumpError::IoError)?;
+            Ok(true)
+        }
+        Err(err) => Err(BumpError::IoError(err)),
+    }
+}
+
 pub fn load_bumpfile(matches: &ArgMatches) -> Result<BumpFile, BumpError> {
     let version_file_path = matches
         .get_one::<String>("bumpfile")
@@ -204,4 +222,47 @@ pub(crate) fn repo_relative_watch_dir(bumpfile_path: &Path) -> Result<String, Bu
                 bumpfile_path.display()
             ))
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::write_if_changed;
+    use std::fs;
+
+    #[test]
+    fn write_if_changed_skips_identical_bytes_and_preserves_mtime() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("version.h");
+        fs::write(&path, "same").unwrap();
+        let mtime = fs::metadata(&path).unwrap().modified().unwrap();
+
+        let wrote = write_if_changed(&path, "same").unwrap();
+
+        assert!(!wrote);
+        assert_eq!(fs::read(&path).unwrap(), b"same");
+        assert_eq!(fs::metadata(&path).unwrap().modified().unwrap(), mtime);
+    }
+
+    #[test]
+    fn write_if_changed_writes_when_bytes_differ() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("version.h");
+        fs::write(&path, "old").unwrap();
+
+        let wrote = write_if_changed(&path, "new").unwrap();
+
+        assert!(wrote);
+        assert_eq!(fs::read(&path).unwrap(), b"new");
+    }
+
+    #[test]
+    fn write_if_changed_creates_missing_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("version.h");
+
+        let wrote = write_if_changed(&path, "new").unwrap();
+
+        assert!(wrote);
+        assert_eq!(fs::read(&path).unwrap(), b"new");
+    }
 }

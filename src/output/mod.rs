@@ -2,10 +2,9 @@ mod format;
 
 pub use format::{Case, render};
 
-use crate::cmd::BumpError;
+use crate::cmd::{self, BumpError};
 use crate::print::{self, PrintSelection};
 use crate::version::Version;
-use std::fs;
 use std::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
@@ -93,11 +92,14 @@ impl Fields {
 
 pub fn write(format: Format, fields: &Fields, path: &Path) -> Result<(), BumpError> {
     let content = render(format, fields)?;
-    fs::write(path, content).map_err(BumpError::IoError)?;
-    if let Some(desc) = format.file_description() {
-        eprintln!("{desc} written to {}", path.display());
+    if cmd::write_if_changed(path, &content)? {
+        if let Some(desc) = format.file_description() {
+            eprintln!("{desc} written to {}", path.display());
+        } else {
+            eprintln!("written to {}", path.display());
+        }
     } else {
-        eprintln!("written to {}", path.display());
+        eprintln!("current version already written to {}", path.display());
     }
     Ok(())
 }

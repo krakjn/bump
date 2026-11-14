@@ -15,6 +15,7 @@ I got tired of bespoke scripts and tons of regex parsing that differentiated sli
 - **Composable**: Construct _your own_ version — e.g. `PRODUCT.RELEASE.HOTFIX`, or mix calendar and custom keys
 - **Flexible**: Multiple **BUMPFILE**s let you version several things in one repo
 - **Integrated**: `bump print` and `bump emit` feed the version into source, build scripts, and other tools
+- **Build-friendly**: `emit` and `update` leave a file in place when its bytes already match, so the modification time stays put and incremental builds stay fast
 - **Compatible**: `bump print --semver` outputs the first three base components for SemVer-aware tools
 - **Automatic**: Designed with continuous integration in mind
 
@@ -159,6 +160,8 @@ Formats: `raw`, `c`, `java`, `csharp`, `go`, `python`, `json`, `toml`, `yaml`.
 
 `--case`: `snake` | `camel` | `pascal` | `uppercase` (default) for language/raw identifiers; ignored for json/toml/yaml.
 
+When an output file already matches the bytes emit would write, bump leaves it in place and prints `current version already written to <path>` on stderr. The modification time stays the same, so Make, Ninja, Cargo, and other timestamp-based builds skip dependents and stay fast. Each `-o` path is checked on its own. A missing file, or one whose bytes differ, is still written.
+
 ### Git integration
 
 ```bash
@@ -178,6 +181,8 @@ bump update Cargo.toml [BUMPFILE]
 bump update pyproject.toml [BUMPFILE]
 bump update build.zig.zon [BUMPFILE]
 ```
+
+When the manifest already matches the bytes update would write, bump leaves it in place and prints `current version already written`. The modification time stays the same, so a build watching that file stays fast until the version changes.
 
 ## GitHub Actions
 
@@ -260,7 +265,7 @@ bump print --semver --only base  # 1.2.3 — no prefix, for Cargo.toml via bump 
 
 ### Emit at build time
 
-Prefer emitting during CI/build over committing generated headers. Add outputs to `.gitignore`:
+Prefer emitting during CI/build over committing generated headers. A matching file is left in place, so its modification time stays the same and incremental builds stay fast. Add outputs to `.gitignore`:
 
 ```gitignore
 version.h

@@ -13,7 +13,7 @@ prefix = "v"
 [base]
 delimiter = "."
 major = 9
-minor = 2
+minor = 3
 patch = 0
 
 [phase]
@@ -31,7 +31,7 @@ separator = "+"
 
 [timestamp]
 format = "%Y-%m-%d %H:%M:%S %Z"
-last = "2026-11-01 14:27:51 UTC"
+last = "2026-11-14 15:00:02 UTC"
 
 # printed label: shown but never tracked, useful injecting dynamic values
 #  - position: "before-prefix", "after-prefix",
